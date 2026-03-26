@@ -1,0 +1,265 @@
+/* 100% 本地化字体定义 - 移除外部 Google Fonts 依赖 */
+@font-face {
+    font-family: 'Ma Shan Zheng';
+    src: url('../fonts/MaShanZheng-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Zhi Mang Xing';
+    src: url('../fonts/ZhiMangXing-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --primary: #fbbf24;
+    --primary-dark: #78350f;
+    --accent: #f97316;
+    --success: #10b981;
+    --bg-dark: #0a0a0a;
+    --glass-white: rgba(255, 255, 255, 0.95);
+    --glass-black: rgba(0, 0, 0, 0.7);
+}
+
+body { 
+    margin: 0; 
+    overflow: hidden; 
+    background-color: var(--bg-dark); 
+    /* 核心 UI 采用本地系统默认印刷体，确保不依赖任何外部加载 */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif; 
+    touch-action: none; 
+    -webkit-font-smoothing: antialiased;
+}
+
+#canvas-container {
+    width: 100vw;
+    height: 100vh;
+}
+
+#reset-view-btn {
+    transform: scale(0.9);
+    transform-origin: left top;
+}
+
+@media (max-width: 1023px) {
+    #reset-view-btn {
+        top: 70px;
+    }
+}
+
+/* Art Typography Styles */
+.font-calligraphy {
+    font-family: 'Ma Shan Zheng', 'STKaiti', 'Kaiti', cursive;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+}
+
+.font-art-display {
+    font-family: 'Zhi Mang Xing', 'STKaiti', 'Kaiti', cursive;
+    letter-spacing: -0.02em;
+}
+
+.title-gradient {
+    background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+}
+
+/* Mobile Drawer Overlay Fix */
+#mobile-drawer-overlay:not(.hidden) {
+    display: block;
+}
+
+/* Scrollbar Utility */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Glassmorphism Styles */
+.panel-glass {
+    background: var(--glass-white);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Export Menu Styles */
+.export-dropdown { 
+    position: absolute; 
+    top: calc(100% + 12px); 
+    right: 0; 
+    background: white; 
+    border-radius: 1.5rem; 
+    overflow: hidden; 
+    display: none; 
+    flex-direction: column; 
+    width: 220px; 
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+    border: 1px solid rgba(0, 0, 0, 0.05); 
+    z-index: 200;
+}
+.export-dropdown.show { display: flex; animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.export-item { 
+    padding: 14px 20px; 
+    font-size: 13px; 
+    color: #1f2937; 
+    transition: all 0.2s; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+}
+.export-item:hover { background: #fff7ed; color: #9a3412; }
+
+/* Export Button Text Color */
+.export-btn div {
+    color: white !important;
+}
+
+/* Interactive States */
+.color-card { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
+.color-card:hover { transform: translateY(-4px) scale(1.02); }
+.color-card.active { 
+    border-color: var(--primary) !important; 
+    background-color: #fffbeb !important;
+    box-shadow: 0 10px 20px -5px rgba(251, 191, 36, 0.3);
+}
+
+.is-thinking { animation: pulse-glow 2s infinite; }
+@keyframes pulse-glow { 
+    0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); } 
+    50% { box-shadow: 0 0 20px 5px rgba(251, 191, 36, 0.2); } 
+}
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+    #main-sidebar {
+        right: 1rem;
+        width: 280px;
+    }
+}
+
+@media (max-width: 640px) {
+    header { padding: 0.75rem !important; }
+    #assistant-container { min-width: auto !important; }
+    #assistant-container span { font-size: 8px; }
+}
+
+/* Steam Label Animation */
+#steam-label > div {
+    animation: steamFloat 3s ease-in-out infinite;
+}
+@keyframes steamFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes gradient-x {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+.animate-gradient-x {
+    background-size: 200% 200%;
+    animation: gradient-x 3s ease infinite;
+}
+
+/* Bottom Nav Icon Shadows */
+nav button i {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    opacity: 1 !important;
+}
+
+nav button {
+    opacity: 1 !important;
+}
+
+/* Bottom Nav Button Container Opacity */
+nav button.bg-slate-50,
+#assistant-container {
+    background-color: rgba(241, 245, 249, 1) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#assistant-container {
+    background-color: rgba(255, 251, 235, 1) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Desktop Sidebar Enhancements */
+@media (min-width: 1024px) {
+    #main-sidebar {
+        transition: all 0.3s ease;
+    }
+    
+    #main-sidebar:hover {
+        transform: translateX(-4px);
+    }
+}
+
+/* PC端布局优化 */
+@media (min-width: 1280px) {
+    #main-sidebar {
+        width: 340px;
+        right: 8px;
+    }
+    
+    #gesture-preview-container {
+        width: 200px;
+    }
+}
+
+/* 移除标题文字间距 */
+header > div:first-child > div {
+    gap: 0 !important;
+}
+
+/* 大屏幕优化 */
+@media (min-width: 1536px) {
+    #main-sidebar {
+        width: 360px;
+        right: 12px;
+    }
+    
+    #gesture-preview-container {
+        width: 220px;
+    }
+}
+
+/* 导出菜单样式优化 */
+.export-dropdown {
+    min-width: 240px;
+}
+
+/* 颜色卡片网格优化 */
+@media (min-width: 1024px) {
+    .color-card {
+        padding: 12px;
+    }
+    
+    .color-card > div:first-child {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+/* 按钮尺寸优化 */
+@media (min-width: 1024px) {
+    #reset-view-btn {
+        padding: 8px 16px;
+    }
+    
+    #reset-view-btn span {
+        font-size: 12px;
+    }
+}
