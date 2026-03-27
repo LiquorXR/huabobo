@@ -11,6 +11,12 @@
       "id": "user_model_1",
       "path": "ng.glb",
       "type": "external"
+    },
+    {
+      "name": "狮子头",
+      "id": "user_model_2",
+      "path": "szt.glb",
+      "type": "external"
     }
   ]
 }
