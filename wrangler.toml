@@ -6,4 +6,4 @@ pages_build_output_dir = "public"
 # 在这里配置你的环境变量
 GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
 # 注意：敏感信息（如 API_KEY）建议在 Cloudflare Dashboard 中作为 Secret 配置
-GEMINI_API_KEY = "your-api-key"
+# GEMINI_API_KEY = "your-api-key"
