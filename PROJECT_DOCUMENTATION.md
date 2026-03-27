@@ -82,13 +82,24 @@
 2. 启动开发服务器：`npm run dev` (需安装 wrangler)
 3. 访问 `http://localhost:8788`
 
-### 5.2 部署说明
-1. 推送代码至 GitHub/GitLab。
-2. 在 Cloudflare Pages 后台关联项目。
-3. 设置**环境变量** (Environment Variables)：
-   - `GEMINI_API_KEY`: **必填**。从 [Google AI Studio](https://aistudio.google.com/) 获取的 API 密钥，用于调用大模型。
-   - `GEMINI_MODEL`: **可选**。项目代码中硬编码的默认值为 `gemini-3.1-flash-lite-preview`。建议在环境变量中显式指定稳定版本。
-4. 构建命令留空（本项目为纯静态+Functions），根目录设为 `/public`。
+### 5.2 部署说明 (Cloudflare Pages)
+
+1. **关联仓库**：将代码推送至 GitHub，在 Cloudflare Pages 后台创建新项目并关联。
+2. **构建设置 (Build settings)**：
+   - **Framework preset**: `None`
+   - **Build command**: 留空 (不填写)
+   - **Build output directory**: `public`  *(⚠️ 必须设置为 public，否则会报 404 错误)*
+   - **Root directory**: `/` *(⚠️ 必须为根目录，以识别 functions 文件夹)*
+3. **设置环境变量 (Environment variables)**：
+   在项目设置的 **Environment variables** 栏目中（Production 和 Preview 环境均需添加）：
+   - `GEMINI_API_KEY`: **必填**。从 [Google AI Studio](https://aistudio.google.com/) 获取。
+   - `GEMINI_MODEL`: 设置为 `gemini-3.1-flash-lite-preview`。
+4. **本地开发环境变量**：
+   本地开发时，请在项目根目录创建 `.dev.vars` 文件（已加入 .gitignore），内容如下：
+   ```text
+   GEMINI_API_KEY=你的密钥
+   GEMINI_MODEL=gemini-3.1-flash-lite-preview
+   ```
 
 ---
 
