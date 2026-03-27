@@ -91,14 +91,13 @@
    - **Build output directory**: `public`  *(⚠️ 必须设置为 public，否则会报 404 错误)*
    - **Root directory**: `/` *(⚠️ 必须为根目录，以识别 functions 文件夹)*
 3. **设置环境变量 (Environment variables)**：
-   在项目设置的 **Environment variables** 栏目中（Production 和 Preview 环境均需添加）：
-   - `GEMINI_API_KEY`: **必填**。从 [Google AI Studio](https://aistudio.google.com/) 获取。
-   - `GEMINI_MODEL`: 设置为 `gemini-3.1-flash-lite-preview`。
+   项目支持通过根目录下的 `wrangler.toml` 自动配置环境变量：
+   - `GEMINI_MODEL`: 默认设置为 `gemini-3.1-flash-lite-preview`。
+   - `GEMINI_API_KEY`: **必填**。出于安全考虑，建议在 Cloudflare Dashboard 的 "Settings" -> "Variables and Secrets" 中手动添加。
 4. **本地开发环境变量**：
-   本地开发时，请在项目根目录创建 `.dev.vars` 文件（已加入 .gitignore），内容如下：
+   本地开发时，`wrangler` 会优先读取 `wrangler.toml` 中的 `[vars]`。对于敏感信息，请在项目根目录创建 `.dev.vars` 文件（已加入 .gitignore），内容如下：
    ```text
    GEMINI_API_KEY=你的密钥
-   GEMINI_MODEL=gemini-3.1-flash-lite-preview
    ```
 
 ---
