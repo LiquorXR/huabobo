@@ -97,6 +97,7 @@
 4. **本地开发环境变量**：
    本地开发时，`wrangler` 会优先读取 `wrangler.toml` 中的 `[vars]`。对于敏感信息，请在项目根目录创建 `.dev.vars` 文件（已加入 .gitignore），内容如下：
    ```text
+   GEMINI_MODEL=gemini-3.1-flash-lite-preview
    GEMINI_API_KEY=你的密钥
    ```
 
