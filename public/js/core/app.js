@@ -12,6 +12,7 @@ export const App = {
     activeIndex: 0,
     isSteaming: false,
     isLoading: true,
+    modelManifest: null,
 
     async init() {
         if (typeof THREE === 'undefined') {
@@ -58,6 +59,15 @@ export const App = {
                 loadingOverlay.style.display = 'none';
                 this.isLoading = false;
             }, 500);
+        }
+    },
+
+    showLoading() {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'flex';
+            loadingOverlay.style.opacity = '1';
+            this.isLoading = true;
         }
     },
 
@@ -142,28 +152,126 @@ export const App = {
         board.receiveShadow = true;
         this.scene.add(board);
         
-        this.addNewLayer();
+        // Load manifest then add default layer
+        fetch('models/manifest.json')
+            .then(res => res.json())
+            .then(data => {
+                this.modelManifest = data;
+                this.addNewLayer('default');
+            })
+            .catch(() => this.addNewLayer());
     },
 
-    addNewLayer() {
-        // Soft flour-like dough material
-        const mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(2, 64, 64), 
-            new THREE.MeshStandardMaterial({ 
-                color: 0xffffff, 
-                roughness: 0.6, // More satin-like
-                metalness: 0.02,
-                emissive: 0x222222, // Slight self-illumination for soft look
-                emissiveIntensity: 0.1
-            })
-        );
-        // Position y = 2 (radius * default scale 1) to touch the board at y=0
-        mesh.position.set((Math.random() - 0.5) * 5, 2, (Math.random() - 0.5) * 5);
+    async addNewLayer(modelId = 'default') {
+        let mesh;
+        let modelData = null;
+        if (this.modelManifest && this.modelManifest.models) {
+            modelData = this.modelManifest.models.find(m => m.id === modelId);
+        }
+
+        if (!modelData || modelData.type === 'primitive') {
+            // Default Sphere
+            mesh = new THREE.Mesh(
+                new THREE.SphereGeometry(2, 64, 64), 
+                new THREE.MeshStandardMaterial({ 
+                    color: 0xffffff, 
+                    roughness: 0.6,
+                    metalness: 0.02,
+                    emissive: 0x222222,
+                    emissiveIntensity: 0.1
+                })
+            );
+            mesh.userData.isPrimitive = true;
+            mesh.position.set((Math.random() - 0.5) * 5, 2, (Math.random() - 0.5) * 5);
+        } else {
+            // Load External Model
+            try {
+                this.showLoading(); // Show loading during model load
+                mesh = await this.loadExternalModel(modelData);
+                mesh.position.set((Math.random() - 0.5) * 5, 0, (Math.random() - 0.5) * 5);
+                this.hideLoading();
+            } catch (e) {
+                console.error("Load model failed, fallback to sphere", e);
+                this.hideLoading();
+                return this.addNewLayer('default');
+            }
+        }
+
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        this.layers.push({ mesh });
+        this.layers.push({ mesh, modelId });
         this.scene.add(mesh);
         this.selectLayer(this.layers.length - 1);
+    },
+
+    loadExternalModel(modelData) {
+        return new Promise((resolve, reject) => {
+            // Fix path: if it doesn't start with http or /, make it relative to models/
+            let path = modelData.path;
+            if (!path.startsWith('http') && !path.startsWith('/') && !path.startsWith('models/')) {
+                path = 'models/' + path;
+            }
+
+            const extension = path.split('.').pop().toLowerCase();
+            let loader;
+            
+            if (extension === 'glb' || extension === 'gltf') {
+                if (typeof THREE.GLTFLoader === 'undefined') {
+                    reject(new Error("GLTFLoader not loaded"));
+                    return;
+                }
+                loader = new THREE.GLTFLoader();
+            } else if (extension === 'obj') {
+                if (typeof THREE.OBJLoader === 'undefined') {
+                    reject(new Error("OBJLoader not loaded"));
+                    return;
+                }
+                loader = new THREE.OBJLoader();
+            } else {
+                reject(new Error("Unsupported model format: " + extension));
+                return;
+            }
+
+            loader.load(path, (result) => {
+                let object = result.scene || result;
+                
+                // Standardize: Center and Scale
+                const box = new THREE.Box3().setFromObject(object);
+                const size = box.getSize(new THREE.Vector3());
+                const center = box.getCenter(new THREE.Vector3());
+                
+                // Scale to fit roughly 4 units wide/high
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 4 / maxDim;
+                object.scale.setScalar(scale);
+                
+                // Offset to center and sit on floor
+                object.position.x = -center.x * scale;
+                object.position.y = -box.min.y * scale; // Bottom at 0
+                object.position.z = -center.z * scale;
+
+                // Create a wrapper to keep the offset logic clean
+                const wrapper = new THREE.Group();
+                wrapper.add(object);
+                
+                // Apply a default material to all meshes if none present
+                wrapper.traverse(child => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        if (!child.material || child.material.type === 'MeshBasicMaterial') {
+                            child.material = new THREE.MeshStandardMaterial({ 
+                                color: 0xffffff, 
+                                roughness: 0.6,
+                                metalness: 0.02
+                            });
+                        }
+                    }
+                });
+
+                resolve(wrapper);
+            }, undefined, reject);
+        });
     },
 
     removeLayer(idx) {
@@ -172,9 +280,19 @@ export const App = {
         if (layer) {
             this.scene.remove(layer.mesh);
             this.layers.splice(idx, 1);
-            // Select the last layer if the removed one was active or if out of bounds
+            
+            // Adjust activeIndex if we removed a layer before it
+            if (idx < this.activeIndex) {
+                this.activeIndex--;
+            }
+            
+            // Ensure activeIndex is within bounds
             const newIndex = Math.min(this.activeIndex, this.layers.length - 1);
-            this.selectLayer(newIndex);
+            
+            // Force a UI update without calling selectLayer to avoid triggering another deletion
+            this.activeIndex = newIndex;
+            this.currentMesh = this.layers[newIndex] ? this.layers[newIndex].mesh : null;
+            UI.updateLayerUI(this.layers, this.activeIndex);
         }
     },
 
@@ -191,7 +309,20 @@ export const App = {
     },
 
     applyPresetColor(hex) {
-        if (this.currentMesh) this.currentMesh.material.color.set(hex);
+        if (this.currentMesh) {
+            this.currentMesh.traverse(child => {
+                if (child.isMesh && child.material) {
+                    // Handle arrays of materials or single material
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => {
+                            if (m.color) m.color.set(hex);
+                        });
+                    } else if (child.material.color) {
+                        child.material.color.set(hex);
+                    }
+                }
+            });
+        }
         UI.updateLayerUI(this.layers, this.activeIndex);
     },
 
@@ -262,13 +393,6 @@ export const App = {
         
         if (this.controls) {
             this.controls.update();
-            
-            // OPTIONAL: Keep light direction consistent relative to camera
-            // Uncomment if you want the shadow to always fall away from the camera
-            /*
-            const offset = new THREE.Vector3(20, 40, 20);
-            this.mainLight.position.copy(this.camera.position).add(offset);
-            */
         }
         
         Steamer.update();

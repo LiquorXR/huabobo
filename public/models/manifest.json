@@ -1,0 +1,16 @@
+{
+  "models": [
+    {
+      "name": "基础面团",
+      "id": "default",
+      "path": "sphere",
+      "type": "primitive"
+    },
+    {
+      "name": "南瓜",
+      "id": "user_model_1",
+      "path": "ng.glb",
+      "type": "external"
+    }
+  ]
+}

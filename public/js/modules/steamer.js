@@ -28,14 +28,30 @@ export const Steamer = {
     },
 
     resetParticle(particle) {
-        if (this.app.layers.length === 0) return;
+        // Ensure velocity exists to prevent crashes
+        if (!particle.userData.velocity) {
+            particle.userData.velocity = new THREE.Vector3(
+                (Math.random() - 0.5) * 0.05,
+                0.05,
+                (Math.random() - 0.5) * 0.05
+            );
+        }
+
+        if (!this.app || !this.app.layers || this.app.layers.length === 0) {
+            particle.visible = false;
+            return;
+        }
         
-        const targetLayer = this.app.layers[Math.floor(Math.random() * this.app.layers.length)].mesh;
-        const scale = targetLayer.scale.x * 2;
+        particle.visible = true;
+        const layer = this.app.layers[Math.floor(Math.random() * this.app.layers.length)];
+        if (!layer || !layer.mesh) return;
         
-        particle.position.x = targetLayer.position.x + (Math.random() - 0.5) * scale;
-        particle.position.y = targetLayer.position.y + (Math.random() * 0.5);
-        particle.position.z = targetLayer.position.z + (Math.random() - 0.5) * scale;
+        const targetLayer = layer.mesh;
+        const scale = targetLayer.scale ? targetLayer.scale.x * 2 : 2;
+        
+        particle.position.x = (targetLayer.position ? targetLayer.position.x : 0) + (Math.random() - 0.5) * scale;
+        particle.position.y = (targetLayer.position ? targetLayer.position.y : 0) + (Math.random() * 0.5);
+        particle.position.z = (targetLayer.position ? targetLayer.position.z : 0) + (Math.random() - 0.5) * scale;
         
         const baseOpacity = this.app.isSteaming ? 0.6 : 0.25;
         const baseSpeed = this.app.isSteaming ? 0.15 : 0.05;
@@ -51,7 +67,9 @@ export const Steamer = {
     },
 
     update() {
+        if (!this.particles) return;
         this.particles.forEach(p => {
+            if (!p.userData || !p.userData.velocity) return;
             p.position.add(p.userData.velocity);
             const decay = this.app.isSteaming ? 0.005 : 0.01;
             const growth = this.app.isSteaming ? 0.03 : 0.01;

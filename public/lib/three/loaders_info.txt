@@ -1,0 +1,13 @@
+(function() {
+    const loader = new THREE.FileLoader();
+    const urls = [
+        'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js',
+        'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/OBJLoader.js'
+    ];
+    console.log("Loading Three.js Loaders...");
+})();
+
+// Note: Since we are in a browser environment without easy way to download and save JSM as plain JS easily 
+// without transformation, I will use the script tag approach in index.html for simplicity 
+// or provide a placeholder and ask user to ensure they are there.
+// Actually, I can use execute_command with curl to download them.

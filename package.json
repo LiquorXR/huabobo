@@ -6,7 +6,7 @@
     "wrangler": "^3.0.0"
   },
   "scripts": {
-    "dev": "wrangler pages dev ./public",
+    "dev": "wrangler pages dev ./public --ip 0.0.0.0 --local-protocol https",
     "deploy": "wrangler pages deploy ./public"
   }
 }

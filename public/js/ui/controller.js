@@ -129,29 +129,98 @@ export const UI = {
         if (dropdown) dropdown.classList.remove('show');
     },
 
+    toggleModelDialog() {
+        const dialog = document.getElementById('model-dialog');
+        const overlay = document.getElementById('model-dialog-overlay');
+        if (!dialog || !overlay) return;
+
+        const isHidden = dialog.classList.contains('hidden');
+        if (isHidden) {
+            overlay.classList.remove('hidden');
+            dialog.classList.remove('hidden');
+            this.loadModelsToUI();
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                dialog.classList.remove('opacity-0', 'scale-90');
+            }, 10);
+        } else {
+            dialog.classList.add('opacity-0', 'scale-90');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => {
+                dialog.classList.add('hidden');
+                overlay.classList.add('hidden');
+            }, 300);
+        }
+    },
+
+    async loadModelsToUI() {
+        const grid = document.getElementById('model-grid');
+        if (!grid) return;
+
+        try {
+            const response = await fetch('models/manifest.json');
+            const data = await response.json();
+            
+            grid.innerHTML = data.models.map(model => `
+                <div onclick="App.addNewLayer('${model.id}'); UI.toggleModelDialog()" 
+                     class="group bg-slate-50 hover:bg-amber-50 p-4 rounded-[2rem] border-2 border-transparent hover:border-amber-200 transition-all cursor-pointer flex flex-col items-center gap-3">
+                    <div class="w-full aspect-square bg-white rounded-2xl shadow-sm flex items-center justify-center group-hover:scale-95 transition-transform overflow-hidden">
+                        ${model.thumbnail ? `<img src="${model.thumbnail}" class="w-full h-full object-cover">` : `<i data-lucide="box" class="text-amber-200" size="48"></i>`}
+                    </div>
+                    <span class="text-xs font-black text-slate-700 uppercase tracking-widest">${model.name}</span>
+                </div>
+            `).join('');
+            
+            if (window.lucide) window.lucide.createIcons();
+        } catch (e) {
+            console.error("Failed to load models manifest", e);
+            grid.innerHTML = '<p class="col-span-full text-center py-10 text-slate-400">加载模型清单失败</p>';
+        }
+    },
+
     updateLayerUI(layers, activeIndex) {
         // Find all layer lists (sidebar and mobile drawer)
         const lists = document.querySelectorAll('[id="layer-list"]');
         if (lists.length === 0) return;
 
-        let html = layers.map((l, i) => `
-            <div onclick="App.selectLayer(${i})" 
-                 class="group relative flex-none w-12 h-12 rounded-2xl border-2 transition-all cursor-pointer ${i === activeIndex ? 'border-amber-500 bg-amber-50/50 scale-105 shadow-lg shadow-amber-500/20' : 'border-slate-100 hover:border-amber-200 bg-slate-50/50'}" 
-                 style="padding: 4px;">
-                <div class="w-full h-full rounded-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_4px_rgba(0,0,0,0.1),0_4px_8px_rgba(0,0,0,0.1)] transition-transform group-hover:scale-95 duration-300" 
-                     style="background: radial-gradient(circle at 30% 30%, #ffffff33 0%, transparent 60%), #${l.mesh.material.color.getHexString()}">
-                </div>
-                ${i === activeIndex ? `
-                    <div class="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[10px] text-amber-950 font-black shadow-md border-2 border-white animate-in zoom-in duration-300">
-                        <i data-lucide="check" size="8"></i>
-                    </div>
-                ` : ''}
-            </div>
-        `).join('');
+        let html = layers.map((l, i) => {
+            let colorHex = 'ffffff';
+            if (l.mesh.material && l.mesh.material.color) {
+                colorHex = l.mesh.material.color.getHexString();
+            } else if (l.mesh.isGroup) {
+                // If it's a group (loaded model), find the first mesh to get its color
+                let firstMesh = null;
+                l.mesh.traverse(child => {
+                    if (child.isMesh && !firstMesh) firstMesh = child;
+                });
+                if (firstMesh && firstMesh.material) {
+                    if (Array.isArray(firstMesh.material) && firstMesh.material[0].color) {
+                        colorHex = firstMesh.material[0].color.getHexString();
+                    } else if (firstMesh.material.color) {
+                        colorHex = firstMesh.material.color.getHexString();
+                    }
+                }
+            }
 
-        // Add Add Button
+            return `
+                <div onclick="App.selectLayer(${i})" 
+                     class="group relative flex-none w-12 h-12 rounded-2xl border-2 transition-all cursor-pointer ${i === activeIndex ? 'border-amber-500 bg-amber-50/50 scale-105 shadow-lg shadow-amber-500/20' : 'border-slate-100 hover:border-amber-200 bg-slate-50/50'}" 
+                     style="padding: 4px;">
+                    <div class="w-full h-full rounded-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_4px_rgba(0,0,0,0.1),0_4px_8px_rgba(0,0,0,0.1)] transition-transform group-hover:scale-95 duration-300" 
+                         style="background: radial-gradient(circle at 30% 30%, #ffffff33 0%, transparent 60%), #${colorHex}">
+                    </div>
+                    ${i === activeIndex ? `
+                        <div class="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[10px] text-amber-950 font-black shadow-md border-2 border-white animate-in zoom-in duration-300">
+                            <i data-lucide="check" size="8"></i>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+
+        // Add Add Button - Now opens Model Selection Dialog
         html += `
-            <div onclick="App.addNewLayer()" 
+            <div onclick="UI.toggleModelDialog()" 
                  class="flex-none w-12 h-12 rounded-2xl border-2 border-dashed border-slate-200 hover:border-amber-400 hover:bg-amber-50 transition-all cursor-pointer flex items-center justify-center text-slate-400 hover:text-amber-600">
                 <i data-lucide="plus" size="20"></i>
             </div>

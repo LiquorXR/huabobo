@@ -325,8 +325,16 @@ export const HandTracker = {
             }
 
             // AUTO-ADJUST: Keep bottom on the board surface (y=0)
-            // Original radius = 2, so position.y = 2 * scale.y
-            const targetY = 2 * this.app.currentMesh.scale.y;
+            let targetY = 0;
+            if (this.app.currentMesh.userData.isPrimitive) {
+                // Original radius = 2, so position.y = 2 * scale.y
+                targetY = 2 * this.app.currentMesh.scale.y;
+            } else {
+                // For external models, the bottom is at 0 relative to the wrapper, 
+                // so we don't need to adjust Y based on scale since the normalization handled it.
+                // However, we might want to keep the current height if it was moved.
+                targetY = this.app.currentMesh.position.y;
+            }
             this.app.currentMesh.position.y += (targetY - this.app.currentMesh.position.y) * 0.2;
         }
         
