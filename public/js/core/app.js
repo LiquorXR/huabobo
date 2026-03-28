@@ -310,15 +310,35 @@ export const App = {
 
     applyPresetColor(hex) {
         if (this.currentMesh) {
+            // Find current color to support toggling
+            let currentColorHex = 'ffffff';
+            let firstMesh = null;
+            this.currentMesh.traverse(child => {
+                if (child.isMesh && !firstMesh) firstMesh = child;
+            });
+            if (firstMesh && firstMesh.material) {
+                if (Array.isArray(firstMesh.material) && firstMesh.material[0].color) {
+                    currentColorHex = '#' + firstMesh.material[0].color.getHexString();
+                } else if (firstMesh.material.color) {
+                    currentColorHex = '#' + firstMesh.material.color.getHexString();
+                }
+            }
+
+            const targetHex = hex.toLowerCase();
+            const currentHex = currentColorHex.toLowerCase();
+            
+            // Toggle logic: If clicking the already selected color, revert to white (default)
+            const newHex = (currentHex === targetHex) ? '#ffffff' : hex;
+
             this.currentMesh.traverse(child => {
                 if (child.isMesh && child.material) {
                     // Handle arrays of materials or single material
                     if (Array.isArray(child.material)) {
                         child.material.forEach(m => {
-                            if (m.color) m.color.set(hex);
+                            if (m.color) m.color.set(newHex);
                         });
                     } else if (child.material.color) {
-                        child.material.color.set(hex);
+                        child.material.color.set(newHex);
                     }
                 }
             });

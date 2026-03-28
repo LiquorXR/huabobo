@@ -228,6 +228,55 @@ export const UI = {
 
         lists.forEach(list => list.innerHTML = html);
         if (window.lucide) window.lucide.createIcons();
+        
+        this.updateColorPaletteUI(layers, activeIndex);
+    },
+
+    updateColorPaletteUI(layers, activeIndex) {
+        let activeColorHex = null;
+        if (layers && layers.length > 0 && activeIndex >= 0 && layers[activeIndex]) {
+            const mesh = layers[activeIndex].mesh;
+            let firstMesh = null;
+            mesh.traverse(child => {
+                if (child.isMesh && !firstMesh) firstMesh = child;
+            });
+            if (firstMesh && firstMesh.material) {
+                if (Array.isArray(firstMesh.material) && firstMesh.material[0].color) {
+                    activeColorHex = '#' + firstMesh.material[0].color.getHexString();
+                } else if (firstMesh.material.color) {
+                    activeColorHex = '#' + firstMesh.material.color.getHexString();
+                }
+            }
+        }
+
+        if (activeColorHex) activeColorHex = activeColorHex.toLowerCase();
+
+        const buttons = document.querySelectorAll('button.color-card');
+        buttons.forEach(btn => {
+            const onclickAttr = btn.getAttribute('onclick');
+            if (!onclickAttr) return;
+            const match = onclickAttr.match(/App\.applyPresetColor\('([^']+)'\)/);
+            if (match && match[1]) {
+                const btnColor = match[1].toLowerCase();
+                const colorDiv = btn.querySelector('div.w-8.h-8');
+                if (activeColorHex === btnColor) {
+                    btn.classList.remove('border-transparent');
+                    btn.classList.add('border-amber-500', 'scale-[1.05]', 'shadow-md', 'bg-white/80');
+                    if (colorDiv && !colorDiv.querySelector('.check-icon')) {
+                        colorDiv.innerHTML = '<i data-lucide="check" class="check-icon text-white w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]"></i>';
+                        colorDiv.classList.add('relative');
+                        if (window.lucide) window.lucide.createIcons({ root: colorDiv });
+                    }
+                } else {
+                    btn.classList.add('border-transparent');
+                    btn.classList.remove('border-amber-500', 'scale-[1.05]', 'shadow-md', 'bg-white/80');
+                    if (colorDiv) {
+                        colorDiv.innerHTML = '';
+                        colorDiv.classList.remove('relative');
+                    }
+                }
+            }
+        });
     },
 
     setThinking(isThinking) {
