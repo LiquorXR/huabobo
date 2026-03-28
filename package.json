@@ -6,6 +6,7 @@
     "wrangler": "^3.0.0"
   },
   "scripts": {
+    "build": "node scripts/generate-manifest.js",
     "predev": "node scripts/generate-manifest.js",
     "dev": "wrangler pages dev ./public --ip 0.0.0.0 --local-protocol https",
     "predeploy": "node scripts/generate-manifest.js",
