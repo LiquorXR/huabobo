@@ -11,6 +11,12 @@
       "id": "user_model_1",
       "path": "ng.glb",
       "type": "external"
+    },
+    {
+      "name": "11",
+      "id": "user_model_2",
+      "path": "11.glb",
+      "type": "external"
     }
   ]
 }
