@@ -5,18 +5,6 @@
       "id": "default",
       "path": "sphere",
       "type": "primitive"
-    },
-    {
-      "name": "11",
-      "id": "model_1",
-      "path": "11.obj",
-      "type": "external"
-    },
-    {
-      "name": "ng",
-      "id": "model_2",
-      "path": "ng.glb",
-      "type": "external"
     }
   ]
 }
