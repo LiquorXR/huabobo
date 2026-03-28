@@ -5,18 +5,6 @@
       "id": "default",
       "path": "sphere",
       "type": "primitive"
-    },
-    {
-      "name": "南瓜",
-      "id": "user_model_1",
-      "path": "ng.glb",
-      "type": "external"
-    },
-    {
-      "name": "11",
-      "id": "user_model_2",
-      "path": "11.obj",
-      "type": "external"
     }
   ]
 }

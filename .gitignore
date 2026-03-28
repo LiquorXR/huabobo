@@ -21,3 +21,6 @@ dist/
 
 # OS
 Thumbs.db
+
+# Generated
+public/models/manifest.json
