@@ -346,7 +346,7 @@ export const App = {
         UI.updateLayerUI(this.layers, this.activeIndex);
     },
 
-    exportModel(format) {
+    async exportModel(format) {
         if (this.layers.length === 0) return;
         
         const exportGroup = new THREE.Group();
@@ -354,6 +354,25 @@ export const App = {
             const clone = l.mesh.clone();
             exportGroup.add(clone);
         });
+
+        if (format === 'bambu') {
+            try {
+                const { exportTo3MF } = await import('https://cdn.jsdelivr.net/npm/three-3mf-exporter/+esm');
+                const blob = await exportTo3MF(exportGroup);
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `我的花饽饽_${new Date().getTime()}.3mf`;
+                link.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error("Export 3MF failed:", err);
+                alert("生成 3MF 失败，请尝试使用 STL 导出或检查控制台。");
+            } finally {
+                UI.hideExportMenu();
+            }
+            return;
+        }
 
         let data, extension, mimeType;
         if (format === 'obj') {

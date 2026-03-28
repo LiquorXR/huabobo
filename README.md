@@ -7,7 +7,7 @@
 - **文化传承**：将传统面塑技艺转化为数字化体验。
 - **直观交互**：利用 MediaPipe 实现无接触式手势捏合操作。
 - **AI 赋能**：集成 Gemini 大模型，提供大师级的实时技法点评。
-- **闭环体验**：支持 3D 模型导出，适配 3D 打印，实现从虚拟到现实的转化。
+- **闭环体验**：支持 3D 模型导出（OBJ/STL 以及拓竹专属的 3MF 格式），适配 3D 打印，实现从虚拟到现实的转化。
 
 ---
 
@@ -30,8 +30,9 @@
 
 ### 3.1 3D 交互系统 (`public/js/core/app.js`)
 - **场景构建**：初始化 WebGL 渲染器、透视相机及环境光照。
-- **面团管理**：支持多层级面团添加、删除及颜色切换。
-- **模型导出**：集成 `OBJExporter` 和 `STLExporter`，支持导出 OBJ 或 STL 格式。
+- **动态模型**：解析 `manifest.json` 动态挂载 `public/models` 目录下的外部初始面团资产。
+- **面团管理**：支持多层级面团添加、删除、选中及颜色切换。
+- **模型导出**：集成 `OBJExporter`、`STLExporter` 并且动态引入 `three-3mf-exporter` 支持直接导出拓竹 (Bambu Lab) 切片专用的 3MF 包含颜色信息的模型包。
 
 ### 3.2 手势追踪模块 (`public/js/modules/hand-tracker.js`)
 - **多端适配**：针对移动端和 PC 端分别优化摄像头流处理。
@@ -49,6 +50,9 @@
 ### 3.4 大师传艺模块 (`functions/api/ask-master.js` & `public/js/modules/master.js`)
 - **多模态分析**：基于当前作品的状态（面团数量、颜色、比例），通过 AI 生成具有非遗韵味的专业点评。
 - **安全代理**：通过后端函数转发请求，保护 API Key 安全。
+
+### 3.5 五彩面团色盘
+- **非遗映射**：提取传统食物着色方案（红曲米、胡萝卜、老南瓜、大黄米、菠菜汁、青豆泥），并在代码层实现天然颜料到 HEX 值的对应关系，增强系统文化内涵沉浸感。
 
 ---
 
@@ -68,7 +72,9 @@
 │   │   ├── modules/        # 手势、AI、蒸制等功能模块
 │   │   └── ui/             # 界面控制器
 │   ├── lib/                # 第三方库本地化 (Three.js, MediaPipe)
+│   ├── models/             # 拓展面团模型目录及 manifest.json
 │   └── index.html          # 项目主入口
+├── scripts/                # 构建脚本（如 generate-manifest.js）
 ├── package.json            # 项目依赖与脚本
 └── wrangler.toml           # Cloudflare 部署配置 (可选)
 ```
@@ -79,15 +85,16 @@
 
 ### 5.1 本地开发
 1. 安装依赖：`npm install`
-2. 启动开发服务器：`npm run dev` (需安装 wrangler)
-3. 访问 `http://localhost:8788`
+2. 添加自定义模型 (可选)：可将任意 `.obj`, `.stl`, `.glb` 文件放入 `public/models` 目录。
+3. 启动开发环境：运行 `npm run dev`。此时执行的 `predev` 钩子会自动运行 `scripts/generate-manifest.js`，将 `models` 目录下的源文件信息注入系统。
+4. 访问 `http://localhost:8788`
 
 ### 5.2 部署说明 (Cloudflare Pages)
 
 1. **关联仓库**：将代码推送至 GitHub，在 Cloudflare Pages 后台创建新项目并关联。
 2. **构建设置 (Build settings)**：
    - **Framework preset**: `None`
-   - **Build command**: 留空 (不填写)
+   - **Build command**: `npm run build`  *(⚠️ 必须设置为 npm run build，否则无法加载自定义3D模型)*
    - **Build output directory**: `public`  *(⚠️ 必须设置为 public，否则会报 404 错误)*
    - **Root directory**: `/` *(⚠️ 必须为根目录，以识别 functions 文件夹)*
 3. **设置环境变量 (Environment variables)**：
