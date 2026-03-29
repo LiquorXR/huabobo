@@ -160,21 +160,57 @@ export const UI = {
         try {
             const response = await fetch('models/manifest.json');
             const data = await response.json();
+            this.app.modelManifest = data; // Sync back just in case
             
             grid.innerHTML = data.models.map(model => `
-                <div onclick="App.addNewLayer('${model.id}'); UI.toggleModelDialog()" 
+                <div id="model-item-${model.id}" onclick="App.addNewLayer('${model.id}'); UI.toggleModelDialog()" 
                      class="group bg-slate-50 hover:bg-amber-50 p-4 rounded-[2rem] border-2 border-transparent hover:border-amber-200 transition-all cursor-pointer flex flex-col items-center gap-3">
-                    <div class="w-full aspect-square bg-white rounded-2xl shadow-sm flex items-center justify-center group-hover:scale-95 transition-transform overflow-hidden">
-                        ${model.thumbnail ? `<img src="${model.thumbnail}" class="w-full h-full object-cover">` : `<i data-lucide="box" class="text-amber-200" size="48"></i>`}
+                    <div class="thumbnail-container w-full aspect-square bg-[#f8fafc] rounded-2xl shadow-sm flex items-center justify-center group-hover:scale-95 transition-transform overflow-hidden">
+                        <div class="w-8 h-8 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin"></div>
                     </div>
                     <span class="text-xs font-black text-slate-700 uppercase tracking-widest">${model.name}</span>
                 </div>
             `).join('');
+
+            // Background load and capture thumbnails
+            for (const model of data.models) {
+                this.generateModelPreview(model);
+            }
             
             if (window.lucide) window.lucide.createIcons();
         } catch (e) {
             console.error("Failed to load models manifest", e);
             grid.innerHTML = '<p class="col-span-full text-center py-10 text-slate-400">加载模型清单失败</p>';
+        }
+    },
+
+    async generateModelPreview(model) {
+        const item = document.getElementById(`model-item-${model.id}`);
+        if (!item) return;
+        const container = item.querySelector('.thumbnail-container');
+        
+        try {
+            let mesh;
+            if (model.type === 'primitive') {
+                const geo = new THREE.SphereGeometry(2, 32, 32);
+                mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            } else {
+                mesh = await this.app.loadExternalModel(model);
+            }
+            
+            const dataUrl = await this.app.captureModelSnapshot(mesh);
+            container.innerHTML = `<img src="${dataUrl}" class="w-full h-full object-contain p-2">`;
+            
+            // Cleanup temporary mesh if it was specifically for preview
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) {
+                if (Array.isArray(mesh.material)) mesh.material.forEach(m => m.dispose());
+                else mesh.material.dispose();
+            }
+        } catch (e) {
+            console.error(`Failed to generate preview for ${model.id}`, e);
+            container.innerHTML = '<i data-lucide="box" class="text-slate-300" size="32"></i>';
+            if (window.lucide) window.lucide.createIcons({ root: container });
         }
     },
 
@@ -184,34 +220,21 @@ export const UI = {
         if (lists.length === 0) return;
 
         let html = layers.map((l, i) => {
-            let colorHex = 'ffffff';
-            if (l.mesh.material && l.mesh.material.color) {
-                colorHex = l.mesh.material.color.getHexString();
-            } else if (l.mesh.isGroup) {
-                // If it's a group (loaded model), find the first mesh to get its color
-                let firstMesh = null;
-                l.mesh.traverse(child => {
-                    if (child.isMesh && !firstMesh) firstMesh = child;
-                });
-                if (firstMesh && firstMesh.material) {
-                    if (Array.isArray(firstMesh.material) && firstMesh.material[0].color) {
-                        colorHex = firstMesh.material[0].color.getHexString();
-                    } else if (firstMesh.material.color) {
-                        colorHex = firstMesh.material.color.getHexString();
-                    }
-                }
-            }
+            const thumb = l.thumbnail || '';
+            const colorHex = l.mesh.material ? '#' + l.mesh.material.color.getHexString() : '#ffffff';
 
             return `
                 <div onclick="App.selectLayer(${i})" 
-                     class="group relative flex-none w-12 h-12 rounded-2xl border-2 transition-all cursor-pointer ${i === activeIndex ? 'border-amber-500 bg-amber-50/50 scale-105 shadow-lg shadow-amber-500/20' : 'border-slate-100 hover:border-amber-200 bg-slate-50/50'}" 
-                     style="padding: 4px;">
-                    <div class="w-full h-full rounded-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_4px_rgba(0,0,0,0.1),0_4px_8px_rgba(0,0,0,0.1)] transition-transform group-hover:scale-95 duration-300" 
-                         style="background: radial-gradient(circle at 30% 30%, #ffffff33 0%, transparent 60%), #${colorHex}">
+                     class="group relative flex-none w-14 h-14 rounded-2xl border-2 transition-all cursor-pointer ${i === activeIndex ? 'border-amber-500 bg-amber-50 scale-105 shadow-xl shadow-amber-500/20' : 'border-slate-100/50 hover:border-amber-200 bg-white/50 backdrop-blur-md'}" 
+                     style="padding: 2px;">
+                    <div class="w-full h-full rounded-xl overflow-hidden relative bg-[#f8fafc]">
+                        ${thumb ? `<img src="${thumb}" class="w-full h-full object-contain p-1 z-10 relative">` : ''}
+                        <!-- Color Background Hint -->
+                        <div class="absolute inset-0 opacity-10" style="background: ${colorHex}"></div>
                     </div>
                     ${i === activeIndex ? `
-                        <div class="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[10px] text-amber-950 font-black shadow-md border-2 border-white animate-in zoom-in duration-300">
-                            <i data-lucide="check" size="8"></i>
+                        <div class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-lg border-2 border-white z-20">
+                            <i data-lucide="check" size="10" stroke-width="4"></i>
                         </div>
                     ` : ''}
                 </div>

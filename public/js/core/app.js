@@ -13,6 +13,11 @@ export const App = {
     isSteaming: false,
     isLoading: true,
     modelManifest: null,
+    dropShadow: null, // 垂直投影辅助器
+    dropLine: null,   // 垂直参考线
+    snapshotRenderer: null,
+    snapshotCamera: null,
+    snapshotScene: null,
 
     async init() {
         if (typeof THREE === 'undefined') {
@@ -151,6 +156,31 @@ export const App = {
         board.position.y = -0.75;
         board.receiveShadow = true;
         this.scene.add(board);
+
+        // 初始化垂直投影辅助点
+        const shadowGeo = new THREE.CircleGeometry(1.2, 32);
+        const shadowMat = new THREE.MeshBasicMaterial({ 
+            color: 0x000000, 
+            transparent: true, 
+            opacity: 0.15,
+            depthWrite: false
+        });
+        this.dropShadow = new THREE.Mesh(shadowGeo, shadowMat);
+        this.dropShadow.rotation.x = -Math.PI / 2;
+        this.dropShadow.position.y = 0.01; // 略微高于桌面防止闪烁
+        this.dropShadow.visible = false;
+        this.scene.add(this.dropShadow);
+
+        // 初始化垂直参考线 (虚线感)
+        const lineGeo = new THREE.CylinderGeometry(0.03, 0.03, 1, 8);
+        const lineMat = new THREE.MeshBasicMaterial({ 
+            color: 0xfbbf24, 
+            transparent: true, 
+            opacity: 0.3 
+        });
+        this.dropLine = new THREE.Mesh(lineGeo, lineMat);
+        this.dropLine.visible = false;
+        this.scene.add(this.dropLine);
         
         // Load manifest then add default layer
         fetch('models/manifest.json')
@@ -171,8 +201,11 @@ export const App = {
 
         if (!modelData || modelData.type === 'primitive') {
             // Default Sphere
+            const sphereGeo = new THREE.SphereGeometry(2, 64, 64);
+            sphereGeo.translate(0, 2, 0); // 将球体底面平移至原点 (0,0,0)
+            
             mesh = new THREE.Mesh(
-                new THREE.SphereGeometry(2, 64, 64), 
+                sphereGeo, 
                 new THREE.MeshStandardMaterial({ 
                     color: 0xffffff, 
                     roughness: 0.6,
@@ -182,7 +215,7 @@ export const App = {
                 })
             );
             mesh.userData.isPrimitive = true;
-            mesh.position.set((Math.random() - 0.5) * 5, 2, (Math.random() - 0.5) * 5);
+            mesh.position.set((Math.random() - 0.5) * 5, 0, (Math.random() - 0.5) * 5); // 初始落位桌面
         } else {
             // Load External Model
             try {
@@ -199,7 +232,14 @@ export const App = {
 
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        this.layers.push({ mesh, modelId });
+        
+        const layer = { 
+            mesh, 
+            modelId,
+            thumbnail: await this.captureModelSnapshot(mesh)
+        };
+        
+        this.layers.push(layer);
         this.scene.add(mesh);
         this.selectLayer(this.layers.length - 1);
     },
@@ -342,8 +382,74 @@ export const App = {
                     }
                 }
             });
+
+            // Update thumbnail after color change
+            const layer = this.layers[this.activeIndex];
+            if (layer) {
+                this.captureModelSnapshot(this.currentMesh).then(dataUrl => {
+                    layer.thumbnail = dataUrl;
+                    UI.updateLayerUI(this.layers, this.activeIndex);
+                });
+            }
         }
         UI.updateLayerUI(this.layers, this.activeIndex);
+    },
+
+    /**
+     * Captures a snapshot of the given mesh/object
+     * @param {THREE.Object3D} object 
+     * @returns {Promise<string>} Data URL
+     */
+    async captureModelSnapshot(object) {
+        if (!this.snapshotRenderer) {
+            this.snapshotRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+            this.snapshotRenderer.setSize(256, 256);
+            this.snapshotScene = new THREE.Scene();
+            // 设置淡灰色背景
+            this.snapshotScene.background = new THREE.Color(0xf8fafc); 
+            this.snapshotCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+            
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+            directional.position.set(5, 5, 5);
+            this.snapshotScene.add(ambient, directional);
+        }
+
+        const scene = this.snapshotScene;
+        const camera = this.snapshotCamera;
+        const renderer = this.snapshotRenderer;
+
+        // Clone or use a copy for snapshot-ting to avoid disturbing main scene
+        // For simplicity and performance, we'll temporarily move the object or its clone
+        const previewObj = object.clone();
+        
+        // Reset position for standard view
+        previewObj.position.set(0, 0, 0);
+        previewObj.rotation.set(0, 0, 0);
+        previewObj.scale.setScalar(1);
+
+        // Center and scale to fit
+        const box = new THREE.Box3().setFromObject(previewObj);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 3 / maxDim; // Fit within 3 units
+        previewObj.scale.setScalar(scale);
+        previewObj.position.sub(center.multiplyScalar(scale));
+
+        scene.add(previewObj);
+        
+        // Adjust camera to look at the object
+        camera.position.set(4, 3, 5);
+        camera.lookAt(0, 0, 0);
+        
+        renderer.clear();
+        renderer.render(scene, camera);
+        const dataUrl = renderer.domElement.toDataURL('image/png');
+        
+        scene.remove(previewObj);
+        
+        return dataUrl;
     },
 
     async exportModel(format) {
@@ -401,6 +507,30 @@ export const App = {
         URL.revokeObjectURL(url);
     },
 
+    /**
+     * Updates the thumbnail of the currently active layer.
+     * Throttled to avoid performance issues during continuous gestures.
+     */
+    updateActiveLayerThumbnail() {
+        if (!this.layers[this.activeIndex]) return;
+        
+        const now = Date.now();
+        if (this._lastThumbnailUpdateTime && now - this._lastThumbnailUpdateTime < 500) {
+            // Schedule one more update if we are within throttle window
+            if (this._thumbnailTimeout) clearTimeout(this._thumbnailTimeout);
+            this._thumbnailTimeout = setTimeout(() => this.updateActiveLayerThumbnail(), 500);
+            return;
+        }
+
+        this._lastThumbnailUpdateTime = now;
+        this.captureModelSnapshot(this.currentMesh).then(dataUrl => {
+            if (this.layers[this.activeIndex]) {
+                this.layers[this.activeIndex].thumbnail = dataUrl;
+                UI.updateLayerUI(this.layers, this.activeIndex);
+            }
+        });
+    },
+
     startSteaming() {
         if (this.isSteaming) return;
         this.isSteaming = true;
@@ -435,6 +565,32 @@ export const App = {
         }
         
         Steamer.update();
+
+        // 更新垂直投影位置
+        if (this.currentMesh && this.dropShadow) {
+            this.dropShadow.visible = true;
+            this.dropShadow.position.x = this.currentMesh.position.x;
+            this.dropShadow.position.z = this.currentMesh.position.z;
+            
+            // 根据高度调整影子大小和透明度
+            const height = this.currentMesh.position.y;
+            const shadowScale = 1 + height * 0.05;
+            this.dropShadow.scale.set(shadowScale, shadowScale, 1);
+            this.dropShadow.material.opacity = Math.max(0.05, 0.2 - height * 0.01);
+
+            // 更新垂直参考线
+            if (height > 0.5) {
+                this.dropLine.visible = true;
+                this.dropLine.position.set(this.currentMesh.position.x, height / 2, this.currentMesh.position.z);
+                this.dropLine.scale.y = height;
+            } else {
+                this.dropLine.visible = false;
+            }
+        } else if (this.dropShadow) {
+            this.dropShadow.visible = false;
+            if (this.dropLine) this.dropLine.visible = false;
+        }
+
         this.renderer.render(this.scene, this.camera);
     }
 };

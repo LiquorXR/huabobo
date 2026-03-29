@@ -20,7 +20,11 @@ export const HandTracker = {
         smoothPosition: { x: 0, y: 0, z: 0 },
         smoothScale: { x: 1, y: 1, z: 1 },
         latchTimer: null, // 移动端状态保持计时器
-        lastRawDetected: 'none'
+        lastRawDetected: 'none',
+        isDualHandActive: false, // 是否处于双手指协同模式
+        lockedX: 0,
+        lockedZ: 0,
+        lastHandCount: 0 // 上一次识别到的手数
     },
 
     async init(appInstance) {
@@ -197,52 +201,104 @@ export const HandTracker = {
         let targetPos = null;
 
         const isMobile = window.innerWidth < 1024;
+        const handsData = [];
 
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0 && this.app.currentMesh) {
-            let thumbUpCount = 0, thumbDownCount = 0;
-            
-            results.multiHandLandmarks.forEach((lms) => {
+            results.multiHandLandmarks.forEach((lms, index) => {
                 const wrist = lms[0], thumbTip = lms[4], indexTip = lms[8];
-                
-                // 1. 动态自适应阈值 (基于手掌尺寸)
                 const palmScale = Math.hypot(lms[0].x - lms[9].x, lms[0].y - lms[9].y);
-                // Full 模型精度更高，判定阈值可以收紧到 0.4，提高手感
                 const adaptivePinchThreshold = palmScale * 0.42; 
 
-                // 2. 角度辅助判定 (针对捏合) - Full 模型下角度判断更加细腻
                 const getAngle = (p1, p2, p3) => {
                     const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
                     const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
                     return Math.acos((v1.x * v2.x + v1.y * v2.y) / (Math.hypot(v1.x, v1.y) * Math.hypot(v2.x, v2.y)));
                 };
                 const pinchAngle = getAngle(thumbTip, lms[2], indexTip);
-
-                const thumbIsUp = thumbTip.y < lms[2].y && thumbTip.y < indexTip.y;
-                const thumbIsDown = thumbTip.y > wrist.y && thumbTip.y > lms[17].y;
-                if (thumbIsUp) thumbUpCount++;
-                if (thumbIsDown) thumbDownCount++;
-
-                // 支持双手独立操作逻辑
                 const pinchDist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
                 const isCurled = (tip, mcp) => Math.hypot(lms[tip].x - wrist.x, lms[tip].y - wrist.y) < Math.hypot(lms[mcp].x - wrist.x, lms[mcp].y - wrist.y);
-                
-                const isPinching = pinchDist < adaptivePinchThreshold && pinchAngle < 0.55;
 
-                // 多手状态优先级判定
-                if (isPinching) {
-                    rawDetected = 'pinch';
+                let gesture = 'none';
+                if (pinchDist < adaptivePinchThreshold && pinchAngle < 0.55) {
+                    gesture = 'pinch';
+                } else if (thumbTip.y < lms[2].y && thumbTip.y < indexTip.y) {
+                    // 大拇指显著高于食指及关节点 -> 放大 (优先级高于握拳)
+                    gesture = 'scaleUp';
+                } else if (thumbTip.y > wrist.y && thumbTip.y > lms[17].y + 0.05) {
+                    // 大拇指显著低于手腕和关节点 -> 缩小
+                    gesture = 'scaleDown';
                 } else if (isCurled(8, 5) && isCurled(12, 9) && isCurled(16, 13) && isCurled(20, 17)) {
-                    rawDetected = 'fist';
-                } else if (indexTip.y < wrist.y - 0.08) { 
-                    rawDetected = 'move';
-                    const multiplierX = isMobile ? -35 : -30;
-                    const multiplierZ = isMobile ? 25 : 22;
-                    targetPos = { x: (indexTip.x - 0.5) * multiplierX, z: (indexTip.y - 0.5) * multiplierZ };
+                    gesture = 'fist';
+                } else if (indexTip.y < wrist.y - 0.08) {
+                    // 仅食指上抬 -> 移动
+                    gesture = 'move';
                 }
+
+                handsData.push({ landmarks: lms, palmScale, gesture, indexTip });
             });
 
-            if (thumbUpCount >= 1) rawDetected = 'scaleUp';
-            else if (thumbDownCount >= 1) rawDetected = 'scaleDown';
+            // 策略判定：
+            // 1. 任意手发出了捏合/缩放/握拳，则优先执行（保证单个手操作的灵敏度）
+            const priorityGesture = handsData.find(h => ['pinch', 'fist', 'scaleUp', 'scaleDown'].includes(h.gesture));
+            if (priorityGesture) {
+                rawDetected = priorityGesture.gesture;
+            } else if (handsData.every(h => h.gesture === 'move')) {
+                // 2. 双手进入 Move 状态时，执行“协同高度控制”
+                if (handsData.length === 2) {
+                    rawDetected = 'move';
+                    const h1 = handsData[0].indexTip, h2 = handsData[1].indexTip;
+                    const avgX = (h1.x + h2.x) / 2;
+                    const avgY = (h1.y + h2.y) / 2;
+                    const avgScale = (handsData[0].palmScale + handsData[1].palmScale) / 2;
+
+                    // 检测并记录双手指抓取瞬间的坐标（用于锁定 X-Z）
+                    if (!this.state.isDualHandActive && this.app.currentMesh) {
+                        this.state.isDualHandActive = true;
+                        this.state.lockedX = this.app.currentMesh.position.x;
+                        this.state.lockedZ = this.app.currentMesh.position.z;
+                    }
+
+                    const factorY = 35; // 双手抬举更需要线性感
+
+                    // 【核心逻辑】：双手模式下，Screen Y 映射为 World Y (高度)
+                    // 锁定 X 和 Z 坐标，仅允许 Y 轴位移
+                    const altitude = Math.max(0, (1.1 - avgY - 0.5) * factorY); // 反转 Screen Y
+                    
+                    // 统一底部边界检测：所有模型（原生与外部）的基准点均已对齐至底部
+                    const finalY = Math.max(0, altitude);
+
+                    targetPos = { 
+                        x: this.state.lockedX, 
+                        y: finalY,
+                        z: this.state.lockedZ 
+                    };
+                } else if (handsData.length === 1) {
+                    // 3. 单手模式：退出锁定状态，维持原有的桌面滑动逻辑
+                    this.state.isDualHandActive = false;
+                    rawDetected = 'move';
+                    const h = handsData[0];
+                    const multiplierX = isMobile ? -35 : -30;
+                    const multiplierZ = isMobile ? 25 : 22;
+                    
+                    // 【核心改进】：单手控制位移时，高度 (Y) 保持现有高度不变
+                    // 仅允许在 X-Z 平面内平移 (且确保不会低于 0)
+                    const currentY = Math.max(0, this.app.currentMesh.position.y);
+                    
+                    targetPos = { 
+                        x: (h.indexTip.x - 0.5) * multiplierX, 
+                        y: currentY,
+                        z: (h.indexTip.y - 0.5) * multiplierZ 
+                    };
+                }
+            } else {
+                // 如果没有全在 move 状态，重置双手激活标识
+                this.state.isDualHandActive = false;
+            }
+            
+            // 记录当前有效的手数，用于后续平滑切换判定
+            this.state.lastHandCount = handsData.length;
+        } else {
+            this.state.lastHandCount = 0;
         }
 
         // 3. 状态持久化 (Latching) 解决移动端瞬间丢帧/遮挡导致的闪烁
@@ -300,12 +356,28 @@ export const HandTracker = {
         if (active !== 'none') {
             gestures[active] = true;
             
-            // 指数加权平滑 (EMA) 提升交互丝滑度
-            const smoothFactor = 0.25; 
+            // 动态灵敏度调节：
+            // 单手模式恢复高灵敏度 (0.25)，双手抬升保持适中阻尼 (0.18)
+            const isSingleHand = this.state.lastHandCount === 1;
+            const smoothFactor = isSingleHand ? 0.25 : 0.18; 
 
             if (active === 'move' && targetPos) {
-                this.app.currentMesh.position.x += (targetPos.x - this.app.currentMesh.position.x) * smoothFactor;
-                this.app.currentMesh.position.z += (targetPos.z - this.app.currentMesh.position.z) * smoothFactor;
+                // 应用完整的 XYZ 三维位移
+                let dx = (targetPos.x - this.app.currentMesh.position.x);
+                let dy = (targetPos.y - this.app.currentMesh.position.y);
+                let dz = (targetPos.z - this.app.currentMesh.position.z);
+
+                // 缓冲与灵敏度策略：
+                // 单手模式放开限制 (maxDelta 为 6.0)，实现极致跟随。
+                // 双手模式保持较窄限制，确保抬升过程的绝对垂直与稳定。
+                const maxDelta = isSingleHand ? 6.0 : 1.2; 
+                dx = Math.max(-maxDelta, Math.min(maxDelta, dx));
+                dy = Math.max(-maxDelta, Math.min(maxDelta, dy));
+                dz = Math.max(-maxDelta, Math.min(maxDelta, dz));
+
+                this.app.currentMesh.position.x += dx * smoothFactor;
+                this.app.currentMesh.position.y += dy * smoothFactor;
+                this.app.currentMesh.position.z += dz * smoothFactor;
             } else if (active === 'pinch') {
                 // 捏合操作也进行平滑处理，防止瞬间缩放过大
                 const targetY = Math.max(0.2, this.app.currentMesh.scale.y - 0.035);
@@ -323,20 +395,23 @@ export const HandTracker = {
                     Math.max(minScale, this.app.currentMesh.scale.z)
                 );
             }
-
-            // AUTO-ADJUST: Keep bottom on the board surface (y=0)
-            let targetY = 0;
-            if (this.app.currentMesh.userData.isPrimitive) {
-                // Original radius = 2, so position.y = 2 * scale.y
-                targetY = 2 * this.app.currentMesh.scale.y;
-            } else {
-                // For external models, the bottom is at 0 relative to the wrapper, 
-                // so we don't need to adjust Y based on scale since the normalization handled it.
-                // However, we might want to keep the current height if it was moved.
-                targetY = this.app.currentMesh.position.y;
+            
+            // Trigger thumbnail update for any active gesture that modifies shape/scale
+            if (active !== 'move') {
+                this.app.updateActiveLayerThumbnail();
             }
-            this.app.currentMesh.position.y += (targetY - this.app.currentMesh.position.y) * 0.2;
         }
+
+        // AUTO-ADJUST: 移除自动回落逻辑，高度现在具备“粘性” (受用户需求: 高度抬升后固定)
+        /* 
+        if (active === 'none' && this.app.currentMesh) {
+            let targetFloorY = 0;
+            if (this.app.currentMesh.userData.isPrimitive) {
+                targetFloorY = 2 * this.app.currentMesh.scale.y;
+            }
+            this.app.currentMesh.position.y += (targetFloorY - this.app.currentMesh.position.y) * 0.15;
+        }
+        */
         
         UI.updateGestureVisuals(gestures);
     }

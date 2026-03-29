@@ -7,15 +7,9 @@
       "type": "primitive"
     },
     {
-      "name": "11",
+      "name": "南瓜",
       "id": "model_1",
-      "path": "11.obj",
-      "type": "external"
-    },
-    {
-      "name": "ng",
-      "id": "model_2",
-      "path": "ng.glb",
+      "path": "南瓜.obj",
       "type": "external"
     }
   ]
