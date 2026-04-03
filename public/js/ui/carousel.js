@@ -1,6 +1,6 @@
 export const Carousel = {
     currentIndex: 0,
-    totalSlides: 5,
+    totalSlides: 0,
     container: null,
     indicators: [],
     timer: null,
@@ -8,12 +8,25 @@ export const Carousel = {
 
     init() {
         this.container = document.getElementById('carousel-slides');
+        if (!this.container) return;
+
+        // 自动识别幻灯片数量
+        this.totalSlides = this.container.children.length;
+        
+        // 自动生成导航小圆点
         const indicatorContainer = document.getElementById('carousel-indicators');
         if (indicatorContainer) {
-            this.indicators = Array.from(indicatorContainer.children);
+            indicatorContainer.innerHTML = ''; // 清空原有内容
+            this.indicators = [];
+            for (let i = 0; i < this.totalSlides; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'w-1.5 h-1.5 rounded-full bg-white/40 transition-all cursor-pointer';
+                if (i === 0) dot.classList.add('active-dot');
+                dot.onclick = () => this.goTo(i); // 支持点击跳转
+                indicatorContainer.appendChild(dot);
+                this.indicators.push(dot);
+            }
         }
-
-        if (!this.container) return;
 
         this.startAutoPlay();
         
