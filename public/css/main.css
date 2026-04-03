@@ -46,9 +46,7 @@ body {
 }
 
 @media (max-width: 1023px) {
-    #reset-view-btn {
-        top: 70px;
-    }
+    /* Position is now handled by #left-controls-container */
 }
 
 /* Art Typography Styles */
@@ -261,5 +259,39 @@ header > div:first-child > div {
     
     #reset-view-btn span {
         font-size: 12px;
+    }
+}
+
+/* Carousel Styles */
+#image-carousel {
+    perspective: 1000px;
+}
+
+#image-carousel .group\/carousel {
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#image-carousel .group\/carousel:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.3);
+}
+
+.active-dot {
+    background-color: white !important;
+    width: 1rem !important;
+}
+
+@media (max-width: 1024px) {
+    .active-dot {
+        width: 0.6rem !important;
+    }
+    
+    #carousel-indicators {
+        bottom: 2px !important;
+    }
+    
+    #carousel-indicators > div {
+        width: 4px !important;
+        height: 4px !important;
     }
 }
