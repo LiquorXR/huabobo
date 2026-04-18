@@ -7,9 +7,57 @@
       "type": "primitive"
     },
     {
-      "name": "南瓜",
+      "name": "元宝",
       "id": "model_1",
-      "path": "南瓜.obj",
+      "path": "元宝.glb",
+      "type": "external"
+    },
+    {
+      "name": "宝葫芦",
+      "id": "model_2",
+      "path": "宝葫芦.glb",
+      "type": "external"
+    },
+    {
+      "name": "寿桃",
+      "id": "model_3",
+      "path": "寿桃.glb",
+      "type": "external"
+    },
+    {
+      "name": "柿子",
+      "id": "model_4",
+      "path": "柿子.glb",
+      "type": "external"
+    },
+    {
+      "name": "狮子头",
+      "id": "model_5",
+      "path": "狮子头.glb",
+      "type": "external"
+    },
+    {
+      "name": "福袋",
+      "id": "model_6",
+      "path": "福袋.glb",
+      "type": "external"
+    },
+    {
+      "name": "花馍",
+      "id": "model_7",
+      "path": "花馍.glb",
+      "type": "external"
+    },
+    {
+      "name": "花馍架子",
+      "id": "model_8",
+      "path": "花馍架子.obj",
+      "type": "external"
+    },
+    {
+      "name": "龙抬头聚宝盆",
+      "id": "model_9",
+      "path": "龙抬头聚宝盆.glb",
       "type": "external"
     }
   ]

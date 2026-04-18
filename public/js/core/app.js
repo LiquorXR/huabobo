@@ -1,6 +1,7 @@
 import { UI } from '../ui/controller.js';
 import { HandTracker } from '../modules/hand-tracker.js';
 import { Steamer } from '../modules/steamer.js';
+import { API } from '../api/client.js';
 
 export const App = {
     scene: null,
@@ -24,6 +25,8 @@ export const App = {
             setTimeout(() => this.init(), 500);
             return;
         }
+        
+        window.API = API; // Expose API globally for inline HTML handlers if needed
 
         // Initialize core components
         const trackerPromise = HandTracker.init(this);
@@ -242,6 +245,111 @@ export const App = {
         this.layers.push(layer);
         this.scene.add(mesh);
         this.selectLayer(this.layers.length - 1);
+    },
+
+    exportProjectState() {
+        const state = [];
+        this.layers.forEach(layer => {
+            const mesh = layer.mesh;
+            
+            // Extract colors safely
+            let colorHex = '#ffffff';
+            let firstMesh = null;
+            mesh.traverse(child => { if (child.isMesh && !firstMesh) firstMesh = child; });
+            if (firstMesh && firstMesh.material) {
+                if (Array.isArray(firstMesh.material) && firstMesh.material[0].color) {
+                    colorHex = '#' + firstMesh.material[0].color.getHexString();
+                } else if (firstMesh.material.color) {
+                    colorHex = '#' + firstMesh.material.color.getHexString();
+                }
+            }
+
+            state.push({
+                modelId: layer.modelId,
+                position: mesh.position.toArray(),
+                rotation: mesh.rotation.toArray(),
+                scale: mesh.scale.toArray(),
+                color: colorHex
+            });
+        });
+        return JSON.stringify(state);
+    },
+
+    async loadProjectState(jsonString) {
+        try {
+            const state = JSON.parse(jsonString);
+            
+            // Clear current layers
+            while(this.layers.length > 0) {
+                this.scene.remove(this.layers[0].mesh);
+                this.layers.splice(0, 1);
+            }
+            this.activeIndex = 0;
+            this.currentMesh = null;
+            UI.updateLayerUI([], 0);
+            
+            this.showLoading();
+
+            // Rebuild layers from state
+            for (let i = 0; i < state.length; i++) {
+                const s = state[i];
+                let modelData = null;
+                if (this.modelManifest && this.modelManifest.models) {
+                    modelData = this.modelManifest.models.find(m => m.id === s.modelId);
+                }
+
+                let mesh;
+                if (!modelData || modelData.type === 'primitive') {
+                    const sphereGeo = new THREE.SphereGeometry(2, 64, 64);
+                    sphereGeo.translate(0, 2, 0); 
+                    mesh = new THREE.Mesh(
+                        sphereGeo, 
+                        new THREE.MeshStandardMaterial({ color: s.color, roughness: 0.6, metalness: 0.02 })
+                    );
+                    mesh.userData.isPrimitive = true;
+                } else {
+                    mesh = await this.loadExternalModel(modelData);
+                }
+                
+                mesh.position.fromArray(s.position);
+                mesh.rotation.fromArray(s.rotation);
+                mesh.scale.fromArray(s.scale);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+
+                // Restoring color
+                mesh.traverse(child => {
+                    if (child.isMesh && child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => { if (m.color) m.color.set(s.color); });
+                        } else if (child.material.color) {
+                            child.material.color.set(s.color);
+                        }
+                    }
+                });
+                
+                const layer = {
+                    mesh,
+                    modelId: s.modelId,
+                    thumbnail: await this.captureModelSnapshot(mesh)
+                };
+                
+                this.layers.push(layer);
+                this.scene.add(mesh);
+            }
+            
+            this.hideLoading();
+            if (this.layers.length > 0) {
+                this.selectLayer(this.layers.length - 1);
+            } else {
+                this.addNewLayer();
+            }
+
+        } catch(e) {
+            console.error("Failed to load project state", e);
+            this.hideLoading();
+            alert("读取存档失败！");
+        }
     },
 
     loadExternalModel(modelData) {

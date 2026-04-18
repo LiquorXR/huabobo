@@ -1,0 +1,59 @@
+/* Custom styles for Auth and Account panels */
+#auth-modal {
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+}
+
+.auth-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+    outline: none;
+    background: #f8fafc;
+    font-weight: 500;
+}
+
+.auth-input:focus {
+    border-color: #3b82f6;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.auth-btn {
+    width: 100%;
+    padding: 0.875rem;
+    border-radius: 1rem;
+    font-weight: 900;
+    font-size: 1rem;
+    color: white;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    transition: all 0.3s;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+
+.auth-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.auth-btn:active {
+    transform: translateY(0);
+}
+
+.project-card {
+    background: white;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.project-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}

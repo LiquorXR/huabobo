@@ -23,6 +23,8 @@
     
     <!-- 核心样式与资源本地化 -->
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="css/community.css">
 </head>
 <body>
     <!-- Top Bar -->
@@ -47,18 +49,32 @@
             </div>
         </div>
 
-        <!-- Right: Export Menu -->
-        <div id="export-menu-container" class="pointer-events-auto relative shrink-0">
-            <button class="export-btn group" onclick="UI.toggleExportMenu()">
-                <div class="bg-amber-500 text-amber-950 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg shadow-amber-500/20 group-hover:bg-amber-400 transition-all active:scale-95">
-                    <i data-lucide="share-2" size="18"></i>
-                    <span class="inline text-sm">作品导出</span>
-                </div>
+        <!-- Right: Actions Menu -->
+        <div class="flex items-center gap-3 pointer-events-auto">
+            <!-- Community Button -->
+            <button onclick="UI.toggleCommunity()" class="bg-white/70 backdrop-blur-md text-rose-500 border border-white/50 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-white transition-all active:scale-95">
+                <i data-lucide="compass" size="18"></i>
+                <span class="hidden sm:inline text-sm">灵感社区</span>
             </button>
-            <div id="export-dropdown" class="export-dropdown">
-                <div class="p-2 border-b border-gray-100 mb-1">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">选择格式</span>
-                </div>
+            
+            <!-- Account Button -->
+            <button onclick="UI.toggleAccount()" class="bg-white/70 backdrop-blur-md text-blue-500 border border-white/50 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-white transition-all active:scale-95" id="nav-account-btn">
+                <i data-lucide="user" size="18"></i>
+                <span class="hidden sm:inline text-sm" id="nav-account-text">登录</span>
+            </button>
+
+            <!-- Export Menu -->
+            <div id="export-menu-container" class="relative shrink-0">
+                <button class="export-btn group" onclick="UI.toggleExportMenu()">
+                    <div class="bg-amber-500 text-amber-950 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg shadow-amber-500/20 group-hover:bg-amber-400 transition-all active:scale-95">
+                        <i data-lucide="share-2" size="18"></i>
+                        <span class="inline text-sm">作品导出</span>
+                    </div>
+                </button>
+                <div id="export-dropdown" class="export-dropdown">
+                    <div class="p-2 border-b border-gray-100 mb-1">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">选择格式</span>
+                    </div>
                 <div class="export-item" onclick="App.exportModel('obj')">
                     <div class="flex flex-col">
                         <span class="font-bold">OBJ 模型</span>
@@ -349,6 +365,33 @@
             <div class="absolute top-3 right-3 w-2 h-2 bg-emerald-500 border border-white rounded-full animate-pulse"></div>
         </button>
     </nav>
+
+    <!-- Auth & Account Modal -->
+    <div id="auth-modal-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-md z-[500] hidden opacity-0 transition-opacity duration-300" onclick="UI.toggleAccount()"></div>
+    <div id="auth-modal" class="fixed right-0 top-0 bottom-0 w-full sm:w-[400px] bg-white/95 backdrop-blur-2xl shadow-[-20px_0_60px_rgba(0,0,0,0.2)] z-[550] translate-x-full transition-transform duration-500 ease-out flex flex-col">
+        <div class="flex items-center justify-between p-6 border-b border-gray-100">
+            <h2 class="text-xl font-black text-slate-800" id="auth-modal-title">账号中心</h2>
+            <button onclick="UI.toggleAccount()" class="p-2 text-gray-400 hover:text-slate-800 transition-colors bg-gray-100 rounded-full"><i data-lucide="x" size="20"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 scrollbar-hide" id="auth-modal-content">
+            <!-- Dynamic Content (Login/Register Form OR User Dashboard) injects here -->
+        </div>
+    </div>
+
+    <!-- Community Modal (Full Screen Overlay) -->
+    <div id="community-modal" class="fixed inset-0 bg-[#f8f8f8] z-[600] translate-y-full transition-transform duration-500 ease-out flex flex-col">
+        <header class="bg-white/80 backdrop-blur-xl shrink-0 px-6 py-4 flex items-center justify-between border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+            <div class="flex items-center gap-3">
+                <button onclick="UI.toggleCommunity()" class="p-2 text-gray-500 hover:text-rose-600 transition-colors"><i data-lucide="chevron-down" size="28"></i></button>
+                <h2 class="text-2xl font-black text-slate-800 tracking-wider">灵感<span class="text-rose-500">发现</span></h2>
+            </div>
+            <button onclick="UI.refreshCommunity()" class="p-2.5 bg-gray-100 text-gray-600 hover:text-rose-600 rounded-full transition-colors active:rotate-180"><i data-lucide="refresh-cw" size="20"></i></button>
+        </header>
+        <div class="flex-1 overflow-y-auto p-4 sm:p-8" id="community-waterfall">
+            <!-- Masonry Grid Injects Here -->
+            <div class="waterfall-grid" id="community-grid"></div>
+        </div>
+    </div>
 
     <!-- Application Modules -->
     <script type="module">

@@ -1,3 +1,5 @@
+import { API } from '../api/client.js';
+
 export const UI = {
     app: null,
     
@@ -17,6 +19,17 @@ export const UI = {
 
         // Add touch gestures for mobile drawer
         this.setupDrawerGestures();
+        
+        // Initial nav update
+        this.updateNavAccount();
+    },
+
+    updateNavAccount() {
+        const user = window.API ? window.API.getUser() : null;
+        const textSpan = document.getElementById('nav-account-text');
+        if (textSpan) {
+            textSpan.innerText = user ? user.username : '登录';
+        }
     },
 
     setupDrawerGestures() {
@@ -127,6 +140,259 @@ export const UI = {
     hideExportMenu() {
         const dropdown = document.getElementById('export-dropdown');
         if (dropdown) dropdown.classList.remove('show');
+    },
+
+    toggleAccount() {
+        const modal = document.getElementById('auth-modal');
+        const overlay = document.getElementById('auth-modal-overlay');
+        if (!modal || !overlay) return;
+
+        const isHidden = modal.classList.contains('translate-x-full');
+        if (isHidden) {
+            this.renderAuthContent();
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                modal.classList.remove('translate-x-full');
+            }, 10);
+        } else {
+            modal.classList.add('translate-x-full');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.classList.add('hidden'), 500);
+            this.updateNavAccount();
+        }
+    },
+
+    renderAuthContent() {
+        const container = document.getElementById('auth-modal-content');
+        const title = document.getElementById('auth-modal-title');
+        const user = window.API ? window.API.getUser() : null;
+
+        if (user) {
+            title.innerText = '我的工作台 - ' + user.username;
+            container.innerHTML = `
+                <div class="flex gap-4 mb-6">
+                    <button onclick="UI.saveCurrentProjectAsNew()" class="flex-1 bg-amber-100 text-amber-700 py-3 rounded-xl font-bold hover:bg-amber-200 transition-colors">存为新作品</button>
+                    ${this.app && this.app._activeProjectId ? `<button onclick="UI.updateCurrentProject()" class="flex-1 bg-emerald-100 text-emerald-700 py-3 rounded-xl font-bold hover:bg-emerald-200 transition-colors">更新保存</button>` : ''}
+                </div>
+                
+                <h3 class="font-bold text-slate-500 text-sm mb-4">云端存档</h3>
+                <div id="user-projects-list" class="space-y-4">
+                    <div class="text-center text-slate-400 py-4 text-sm animate-pulse">加载中...</div>
+                </div>
+                <button onclick="UI.logout()" class="w-full mt-8 py-3 text-red-500 font-bold bg-red-50 rounded-xl hover:bg-red-100 transition-colors">退出登录</button>
+            `;
+            this.loadUserProjects();
+        } else {
+            title.innerText = '欢迎回来';
+            container.innerHTML = `
+                <div class="space-y-4 mt-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">用户名</label>
+                        <input id="auth-username" type="text" class="auth-input" placeholder="输入您的昵称">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">密码</label>
+                        <input id="auth-password" type="password" class="auth-input" placeholder="输入密码">
+                    </div>
+                    <div class="pt-4 flex flex-col gap-3">
+                        <button onclick="UI.submitLogin()" class="auth-btn">登录 / Login</button>
+                        <button onclick="UI.submitRegister()" class="w-full py-3 text-slate-500 font-bold bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">注册新账号</button>
+                    </div>
+                </div>
+            `;
+        }
+    },
+
+    async loadUserProjects() {
+        const list = document.getElementById('user-projects-list');
+        if (!list) return;
+        try {
+            const projects = await window.API.getMyProjects();
+            if (projects.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-400 py-6 text-sm">还没有保存过作品</div>';
+                return;
+            }
+            list.innerHTML = projects.map(p => `
+                <div class="project-card relative group">
+                    ${p.thumbnail ? `<img src="${p.thumbnail}" class="w-full h-32 object-contain bg-slate-50">` : '<div class="w-full h-32 bg-slate-100 flex items-center justify-center text-slate-300">无预览</div>'}
+                    <div class="p-3">
+                        <h4 class="font-bold text-slate-700">${p.name}</h4>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-xs text-slate-400">${new Date(p.updatedAt).toLocaleDateString()}</span>
+                            ${p.is_public ? '<span class="text-[10px] bg-rose-100 text-rose-500 px-2 py-0.5 rounded-full">已公开发布</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="absolute inset-0 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm">
+                        <button onclick="UI.loadProject('${p.id}')" class="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 shadow-lg" title="加载编辑"><i data-lucide="download" size="18"></i></button>
+                        <button onclick="UI.shareProject('${p.id}', ${!p.is_public})" class="p-2 ${p.is_public ? 'bg-amber-500 hover:bg-amber-600' : 'bg-rose-500 hover:bg-rose-600'} text-white rounded-full shadow-lg" title="${p.is_public ? '取消发布' : '发布到社区'}">
+                            <i data-lucide="${p.is_public ? 'eye-off' : 'share'}" size="18"></i>
+                        </button>
+                        <button onclick="UI.deleteProject('${p.id}')" class="p-2 bg-slate-200 text-red-500 rounded-full hover:bg-slate-300" title="删除"><i data-lucide="trash-2" size="18"></i></button>
+                    </div>
+                </div>
+            `).join('');
+            if (window.lucide) window.lucide.createIcons();
+        } catch (e) {
+            list.innerHTML = '<div class="text-center text-red-400 py-6 text-sm">加载失败</div>';
+        }
+    },
+
+    async submitLogin() {
+        if (!window.API) return;
+        const userStr = document.getElementById('auth-username').value;
+        const passStr = document.getElementById('auth-password').value;
+        if (!userStr || !passStr) return alert("请输入完整的账号密码");
+        try {
+            await window.API.login(userStr, passStr);
+            this.renderAuthContent();
+            this.updateNavAccount();
+        } catch(e) { alert("登录失败：" + e.message); }
+    },
+
+    async submitRegister() {
+        if (!window.API) return;
+        const userStr = document.getElementById('auth-username').value;
+        const passStr = document.getElementById('auth-password').value;
+        if (!userStr || !passStr) return alert("请输入完整的账号密码");
+        try {
+            await window.API.register(userStr, passStr);
+            this.renderAuthContent();
+            this.updateNavAccount();
+        } catch(e) { alert("注册失败：" + e.message); }
+    },
+
+    logout() {
+        if (window.API) window.API.clearToken();
+        if (this.app) this.app._activeProjectId = null;
+        this.renderAuthContent();
+        this.updateNavAccount();
+    },
+
+    async saveCurrentProjectAsNew() {
+        if (!this.app || !window.API) return;
+        const name = prompt("给你的新作品起个名字吧：", "灵感花饽饽" + Math.floor(Math.random()*100));
+        if (!name) return;
+        try {
+            const data = this.app.exportProjectState();
+            let thumbnail = '';
+            if (this.app.currentMesh) {
+                thumbnail = await this.app.captureModelSnapshot(this.app.currentMesh);
+            }
+            const res = await window.API.saveProject({ name, scene_data: data, thumbnail });
+            this.app._activeProjectId = res.id;
+            this.loadUserProjects();
+        } catch (e) { alert("保存失败：" + e.message); }
+    },
+
+    async updateCurrentProject() {
+        if (!this.app || !window.API || !this.app._activeProjectId) return;
+        try {
+            const data = this.app.exportProjectState();
+            let thumbnail = '';
+            if (this.app.currentMesh) {
+                thumbnail = await this.app.captureModelSnapshot(this.app.currentMesh);
+            }
+            await window.API.saveProject({ id: this.app._activeProjectId, scene_data: data, thumbnail });
+            this.loadUserProjects();
+            alert("已更新！");
+        } catch (e) { alert("更新失败：" + e.message); }
+    },
+
+    async deleteProject(id) {
+        if (!confirm("确定要删除这个存档吗？")) return;
+        try {
+            await window.API.deleteProject(id);
+            if (this.app && this.app._activeProjectId === id) this.app._activeProjectId = null;
+            this.loadUserProjects();
+        } catch(e) { alert("删除失败：" + e.message); }
+    },
+
+    async shareProject(id, isPublic) {
+        try {
+            await window.API.saveProject({ id: id, is_public: isPublic });
+            this.loadUserProjects();
+        } catch(e) { alert("操作失败：" + e.message); }
+    },
+
+    async loadProject(id) {
+        try {
+            const projects = await window.API.getMyProjects();
+            const p = projects.find(x => x.id === id);
+            if (p && p.scene_data && this.app) {
+                this.app._activeProjectId = p.id;
+                await this.app.loadProjectState(p.scene_data);
+                this.toggleAccount(); // close panel to see result
+            }
+        } catch(e) { alert("读取失败：" + e.message); }
+    },
+
+    toggleCommunity() {
+        const modal = document.getElementById('community-modal');
+        if (!modal) return;
+        const isHidden = modal.classList.contains('translate-y-full');
+        if (isHidden) {
+            modal.classList.remove('translate-y-full');
+            this.refreshCommunity();
+        } else {
+            modal.classList.add('translate-y-full');
+        }
+    },
+
+    async refreshCommunity() {
+        const grid = document.getElementById('community-grid');
+        if (!grid || !window.API) return;
+        grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">正在获取最新灵感...</div>';
+        try {
+            const posts = await window.API.getCommunityPosts(30, 0);
+            if (posts.length === 0) {
+                grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400 text-lg">暂无公开作品，快去分享你的创作吧！</div>';
+                return;
+            }
+            grid.innerHTML = posts.map(p => `
+                <div class="waterfall-item">
+                    ${p.thumbnail ? `<img src="${p.thumbnail}" class="waterfall-img" loading="lazy">` : '<div class="w-full aspect-[4/3] bg-slate-100"></div>'}
+                    <div class="waterfall-footer">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-gradient-to-br from-amber-200 to-orange-400 text-white font-bold flex items-center justify-center text-[10px] shadow-sm uppercase">${p.author.substring(0,1)}</div>
+                            <span class="text-xs font-bold text-slate-600 truncate max-w-[80px]">${p.author}</span>
+                        </div>
+                        <button onclick="UI.likeCommunityPost('${p.id}', this)" class="like-btn ${p.hasLiked ? 'liked' : ''}">
+                            <svg class="like-icon w-5 h-5" viewBox="0 0 24 24" fill="${p.hasLiked ? '#f43f5e' : 'none'}" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                            </svg>
+                            <span class="text-xs like-count">${p.likeCount}</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } catch(e) {
+            grid.innerHTML = `<div class="col-span-full py-10 text-center text-red-500">无法连接到社区网络</div>`;
+        }
+    },
+
+    async likeCommunityPost(id, btnElement) {
+        if (!window.API || !window.API.getToken()) {
+            alert("请先登录账号才能点赞哦");
+            this.toggleCommunity(); // fade out to let user login
+            setTimeout(() => this.toggleAccount(), 300);
+            return;
+        }
+        try {
+            const res = await window.API.likePost(id);
+            const countSpan = btnElement.querySelector('.like-count');
+            let count = parseInt(countSpan.innerText);
+            
+            if (res.liked) {
+                btnElement.classList.add('liked');
+                btnElement.querySelector('.like-icon').setAttribute('fill', '#f43f5e');
+                countSpan.innerText = count + 1;
+            } else {
+                btnElement.classList.remove('liked');
+                btnElement.querySelector('.like-icon').setAttribute('fill', 'none');
+                countSpan.innerText = Math.max(0, count - 1);
+            }
+        } catch(e) { }
     },
 
     toggleModelDialog() {
