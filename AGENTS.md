@@ -3,7 +3,6 @@
 ## 🛠 Critical Commands
 - `npm run dev`: Starts the development server using nodemon (`nodemon server.js`). This is the primary command for local development.
 - `node scripts/setup-https.js`: Required to generate local certificates if `USE_HTTPS=true` is set in the `.env` file. Do this before attempting to start the server in HTTPS mode.
-- `npm run build`: Scans the `public/models/` folder and generates `manifest.json`. This is required to automatically register new 3D models added to the system.
 
 ## 🏗 Architecture Context
 - **Config Injection**: `server.js` dynamically injects `window.ENV_CONFIG` into `public/index.html` on every request by replacing the `</head>` tag. **Never** remove the `</head>` tag from `index.html`.

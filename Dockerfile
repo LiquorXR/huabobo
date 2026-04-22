@@ -19,9 +19,6 @@ RUN npm config set registry https://registry.npmmirror.com && \
 # 复制其它项目文件和文件夹
 COPY . .
 
-# 执行 manifest 构建
-RUN npm run build
-
 # 对外暴露后端 3179 端口
 EXPOSE 3179
 

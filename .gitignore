@@ -29,6 +29,3 @@ database/
 
 # Scratch / Temp
 scratch/
-
-# Generated Assets
-public/models/manifest.json

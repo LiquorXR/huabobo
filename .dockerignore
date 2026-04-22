@@ -9,7 +9,6 @@ database/
 *.sqlite
 *.sqlite3
 scratch/
-public/models/manifest.json
 npm-debug.log*
 .vscode/
 .idea/
