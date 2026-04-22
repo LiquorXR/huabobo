@@ -37,7 +37,7 @@
 ## 🛠 开发与运行
 
 ### 环境准备
-1. 创建 `.env` 文件，配置你的 `GEMINI_API_KEY`。
+1. 创建 `.env` 文件，配置你的 `GEMINI_API_KEY`。可以参考 `.env.example`。
 2. 安装依赖：`npm install`
 
 ### 开发指令
@@ -45,6 +45,50 @@
 - `npm run build`：扫描模型文件夹并生成 `manifest.json`，自动注册新增的 3D 模型。
 - `node scripts/setup-https.js`：生成本地自签名证书（如需测试 HTTPS 访问，且 `.env` 中 `USE_HTTPS=true`）。
 - `npm start`：生产环境运行。
+
+---
+
+## 🚢 生产环境部署 (Docker)
+
+由于本项目同时依赖 Node.js 运行时与 Sequelize 数据库，推荐使用 Docker Compose 进行容器化部署。内置的 `docker-compose.yml` 默认使用了 PostgreSQL 作为生产级数据库。
+
+### 部署步骤
+
+1. **克隆代码**：
+   ```bash
+   git clone https://github.com/LiquorXR/huabobo.git
+   cd huabobo
+   ```
+
+2. **环境变量配置**：
+   - 复制一份生产环境所需的配置：
+     ```bash
+     cp .env.example .env
+     ```
+   - 打开 `.env` 并填写**必须**的生产环境变量，比如：
+     ```ini
+     GEMINI_API_KEY=你的真实秘钥
+     JWT_SECRET=随机生成的长字符串
+     GEMINI_MODEL=gemini-3.1-flash-lite-preview
+     ```
+   - **注意**：不需要在 `.env` 中配置 SQLite，`docker-compose.yml` 会自动接管环境变量以覆盖并使用 PostgreSQL。
+
+3. **安全配置 (可选但建议)**：
+   如果你希望使用自定义的数据库密码，请在 `docker-compose.yml` 文件中同步修改 `db` 容器的 `POSTGRES_PASSWORD` 以及 `web` 容器环境变量中的 `DB_PASS`。
+
+4. **一键启动**：
+   ```bash
+   docker-compose up -d --build
+   ```
+   *说明：Docker 会自动构建包含所有资源的镜像（并在其内部执行 `npm run build` 生成 `manifest.json`），同时拉取 PostgreSQL 并完成网络打通。*
+
+5. **验证部署**：
+   - 在浏览器中访问：`http://服务器IP:3179`。
+   - 服务启动时，Sequelize 会由于配置了 `{ alter: true }` 自动把 PostgreSQL 的数据表结构同步完毕，并可以直接登录 Admin UI 添加资源。
+
+### 停止与数据持久化
+- 停止服务：`docker-compose down`
+- （注意：数据库的数据被持久化在了 Docker 卷 `postgres_data` 中，即使执行 `down` 也不会丢失数据。若需彻底清除数据，可加上 `-v` 参数）。
 
 ---
 

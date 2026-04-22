@@ -17,8 +17,8 @@ COPY . .
 # 如果项目有任何初始的构建步骤 (例如 manifest 构建) 在此时执行
 RUN npm run build
 
-# 对外暴露后端 3000 端口
-EXPOSE 3000
+# 对外暴露后端 3179 端口
+EXPOSE 3179
 
 # 启动 Node 服务器
 CMD ["npm", "start"]
