@@ -4,17 +4,21 @@ FROM node:20-alpine
 # 设置工作目录
 WORKDIR /app
 
+# 设置国内镜像源加速 (可选，若在国外服务器可注释掉)
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
 # 复制 package.json 和 package-lock.json
 COPY package*.json ./
 
-# 安装编译原生模块所需的依赖 (如 bcrypt)
-RUN apk add --no-cache python3 make g++
-RUN npm ci --only=production
+# 设置 NPM 国内镜像源并安装依赖
+# 注意：已将 bcrypt 替换为 bcryptjs，无需安装 python3/make/g++ 编译环境
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm ci --only=production
 
 # 复制其它项目文件和文件夹
 COPY . .
 
-# 如果项目有任何初始的构建步骤 (例如 manifest 构建) 在此时执行
+# 执行 manifest 构建
 RUN npm run build
 
 # 对外暴露后端 3179 端口
