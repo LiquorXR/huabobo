@@ -12,8 +12,9 @@ COPY package*.json ./
 
 # 设置 NPM 国内镜像源并安装依赖
 # 注意：已将 bcrypt 替换为 bcryptjs，无需安装 python3/make/g++ 编译环境
+# 使用 npm install 而非 npm ci 以处理 package-lock 不同步的问题
 RUN npm config set registry https://registry.npmmirror.com && \
-    npm ci --only=production
+    npm install --omit=dev
 
 # 复制其它项目文件和文件夹
 COPY . .
