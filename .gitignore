@@ -1,7 +1,3 @@
-# Cloudflare Workers
-.dev.vars
-.wrangler/
-
 # Logs
 logs
 *.log
@@ -14,13 +10,25 @@ pnpm-debug.log*
 node_modules/
 dist/
 
-# Editor
+# Editor/OS
 .vscode/
 .idea/
 .DS_Store
-
-# OS
 Thumbs.db
 
-# Generated
+# Environment/Keys
+.env
+.dev.vars
+.wrangler/
+*.pem
+
+# Database
+database/
+*.sqlite
+*.sqlite3
+
+# Scratch / Temp
+scratch/
+
+# Generated Assets
 public/models/manifest.json

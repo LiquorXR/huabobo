@@ -4,19 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>花饽饽 - 后台管理</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="lib/tailwind.min.js"></script>
+    <script src="lib/lucide/lucide.min.js"></script>
+    <script src="lib/chart.min.js"></script>
+    <script src="lib/three/three.min.js"></script>
+    <script src="lib/three/GLTFLoader.js"></script>
+    <script src="lib/three/OBJLoader.js"></script>
+    <script src="lib/three/DRACOLoader.js"></script>
+
 </head>
 <body class="bg-gray-50 text-slate-800">
-
-<div id="login-view" class="fixed inset-0 flex items-center justify-center bg-gray-50 z-50">
-    <div class="bg-white p-8 rounded-2xl shadow-lg w-96 border border-gray-100">
-        <h2 class="text-2xl font-black mb-6 text-center text-slate-700">后台管理登录</h2>
-        <input type="text" id="admin-user" class="w-full p-3 mb-4 bg-gray-50 border rounded-xl" placeholder="管理员账号">
-        <input type="password" id="admin-pass" class="w-full p-3 mb-6 bg-gray-50 border rounded-xl" placeholder="密码">
-        <button onclick="loginAdmin()" class="w-full p-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">登录</button>
-    </div>
-</div>
 
 <div id="dash-view" class="hidden flex h-screen overflow-hidden">
     <!-- Sidebar -->
@@ -25,50 +22,61 @@
             <h1 class="text-2xl font-black text-amber-500 tracking-wider">DIY<span class="text-white">Admin</span></h1>
         </div>
         <nav class="flex-1 px-4 space-y-2">
-            <a href="#" class="flex items-center gap-3 bg-blue-600/20 text-blue-400 px-4 py-3 rounded-xl border border-blue-500/20"><i data-lucide="layout-dashboard"></i> 总览</a>
-            <a href="#" class="flex items-center gap-3 hover:bg-slate-800 px-4 py-3 rounded-xl transition text-slate-300"><i data-lucide="users"></i> 用户管理</a>
-            <a href="#" class="flex items-center gap-3 hover:bg-slate-800 px-4 py-3 rounded-xl transition text-slate-300"><i data-lucide="box"></i> 作品审核</a>
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 bg-blue-600/20 text-blue-400 px-4 py-3 rounded-xl border border-blue-500/20 transition-all"><i data-lucide="layout-dashboard"></i> 总览</button>
+            <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center gap-3 hover:bg-slate-800 px-4 py-3 rounded-xl transition text-slate-300"><i data-lucide="users"></i> 用户管理</button>
+            <button onclick="switchTab('projects')" id="nav-projects" class="w-full flex items-center gap-3 hover:bg-slate-800 px-4 py-3 rounded-xl transition text-slate-300"><i data-lucide="box"></i> 作品管理</button>
+            <button onclick="switchTab('resources')" id="nav-resources" class="w-full flex items-center gap-3 hover:bg-slate-800 px-4 py-3 rounded-xl transition text-slate-300"><i data-lucide="folder-tree"></i> 资源管理</button>
+
         </nav>
         <div class="p-4 border-t border-slate-800">
-            <button onclick="logoutAdmin()" class="w-full flex justify-center py-2 text-rose-400 hover:text-rose-300"><i data-lucide="log-out" class="mr-2"></i> 登出</button>
+            <button onclick="goBackHome()" class="w-full flex justify-center py-2 text-slate-400 hover:text-white transition-colors"><i data-lucide="arrow-left" class="mr-2"></i> 返回首页</button>
         </div>
     </aside>
 
     <!-- Main -->
     <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50 p-8">
-        <header class="mb-8">
-            <h2 class="text-3xl font-bold text-gray-800">数据看板</h2>
+        <header class="mb-8 flex justify-between items-center">
+            <h2 id="view-title" class="text-3xl font-bold text-gray-800">数据看板</h2>
+            <div id="view-actions"></div>
         </header>
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-bold text-gray-400">总用户数</p>
-                    <h3 class="text-3xl font-black text-blue-600 mt-1" id="stat-users">-</h3>
+        <div id="content-dashboard">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Stat Cards -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-bold text-gray-400">总用户数</p>
+                        <h3 class="text-3xl font-black text-blue-600 mt-1" id="stat-users">-</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-500"><i data-lucide="users" size="24"></i></div>
                 </div>
-                <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-500"><i data-lucide="users" size="24"></i></div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-bold text-gray-400">总作品量</p>
+                        <h3 class="text-3xl font-black text-emerald-600 mt-1" id="stat-projects">-</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500"><i data-lucide="folder-kanban" size="24"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-bold text-gray-400">社区总获赞</p>
+                        <h3 class="text-3xl font-black text-rose-600 mt-1" id="stat-likes">-</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center text-rose-500"><i data-lucide="heart" size="24"></i></div>
+                </div>
             </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-bold text-gray-400">总作品量</p>
-                    <h3 class="text-3xl font-black text-emerald-600 mt-1" id="stat-projects">-</h3>
+
+            <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 mb-8">
+                <h3 class="text-lg font-bold mb-4">近7日数据趋势</h3>
+                <div class="h-[300px]">
+                    <canvas id="trendChart"></canvas>
                 </div>
-                <div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500"><i data-lucide="folder-kanban" size="24"></i></div>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-bold text-gray-400">社区总获赞</p>
-                    <h3 class="text-3xl font-black text-rose-600 mt-1" id="stat-likes">-</h3>
-                </div>
-                <div class="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center text-rose-500"><i data-lucide="heart" size="24"></i></div>
             </div>
         </div>
 
-        <div class="bg-white border text-left border-gray-100 shadow-sm rounded-2xl flex-1 max-h-[600px] overflow-hidden flex flex-col">
-            <div class="p-6 border-b border-gray-100">
-                <h3 class="text-lg font-bold">最新作品大屏</h3>
-            </div>
-            <div class="p-0 overflow-y-auto flex-1">
+        <!-- Projects View (Hidden by default) -->
+        <div id="content-projects" class="hidden">
+            <div class="bg-white border text-left border-gray-100 shadow-sm rounded-2xl overflow-hidden flex flex-col">
                 <table class="w-full text-left text-sm text-gray-600">
                     <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                         <tr>
@@ -77,53 +85,457 @@
                             <th class="px-6 py-4">作品名</th>
                             <th class="px-6 py-4">作者</th>
                             <th class="px-6 py-4">公开状态</th>
-                            <th class="px-6 py-4 text-right">操作</th>
+                            <th class="px-6 py-4 text-right">管理</th>
                         </tr>
                     </thead>
-                    <tbody id="table-body" class="divide-y divide-gray-100">
+                    <tbody id="projects-table-body" class="divide-y divide-gray-100">
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Users View (Hidden by default) -->
+        <div id="content-users" class="hidden">
+            <div class="bg-white border text-left border-gray-100 shadow-sm rounded-2xl overflow-hidden flex flex-col">
+                <table class="w-full text-left text-sm text-gray-600">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr>
+                            <th class="px-6 py-4">ID</th>
+                            <th class="px-6 py-4">用户名</th>
+                            <th class="px-6 py-4">角色</th>
+                            <th class="px-6 py-4">加入时间</th>
+                            <th class="px-6 py-4 text-right">管理</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body" class="divide-y divide-gray-100">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Resources View (Hidden by default) -->
+        <div id="content-resources" class="hidden space-y-8">
+            <!-- 3D Models Management -->
+            <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden flex flex-col p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">3D 模型库</h3>
+                    <button onclick="openUploadModal('models')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition"><i data-lucide="upload" size="16"></i> 上传模型</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-600">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                            <tr>
+                                <th class="px-6 py-4">模型名称</th>
+                                <th class="px-6 py-4">文件名</th>
+                                <th class="px-6 py-4">上传时间</th>
+                                <th class="px-6 py-4 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="models-table-body" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Carousel Images Management -->
+            <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden flex flex-col p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">首页轮播图</h3>
+                    <button onclick="openUploadModal('carousel')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-700 transition"><i data-lucide="image" size="16"></i> 上传图片</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-600">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                            <tr>
+                                <th class="px-6 py-4">预览</th>
+                                <th class="px-6 py-4">排序</th>
+                                <th class="px-6 py-4">文件名</th>
+                                <th class="px-6 py-4 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="carousel-table-body" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Modal (Hidden) -->
+        <div id="upload-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+            <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
+                <h3 id="modal-title" class="text-2xl font-bold mb-6">上传资源</h3>
+                <form id="upload-form" onsubmit="handleUpload(event)" class="space-y-4">
+                    <input type="hidden" id="upload-type">
+                    <div id="name-field">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">显示名称</label>
+                        <input type="text" id="resource-name" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    </div>
+                    <div id="order-field" class="hidden">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">排序权重</label>
+                        <input type="number" id="resource-order" value="0" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    </div>
+                    <div id="preview-area" class="hidden">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">预览图生成</label>
+                        <div id="upload-preview-container" class="w-full aspect-square bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-slate-200">
+                            <span class="text-xs text-slate-400">正在解析 3D 预览...</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">文件</label>
+                        <input type="file" id="resource-file" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
+                        <p id="file-hint" class="text-[10px] text-gray-400 mt-1"></p>
+                    </div>
+                    <div class="flex gap-4 mt-8">
+                        <button type="button" onclick="closeUploadModal()" class="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">取消</button>
+                        <button type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">开始上传</button>
+                    </div>
+                </form>
             </div>
         </div>
     </main>
 </div>
 
+
 <script>
     lucide.createIcons();
     
+    // 自动关联主站 Token
     let token = localStorage.getItem('admin_token');
-
-    if(token) { showDash(); }
-
-    async function loginAdmin() {
-        const user = document.getElementById('admin-user').value;
-        const pass = document.getElementById('admin-pass').value;
-        try {
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({username: user, password: pass})
-            });
-            const data = await res.json();
-            if(!res.ok) throw new Error(data.error);
-            if(data.user.role !== 'admin') throw new Error("您不是管理员。");
-            
-            token = data.token;
-            localStorage.setItem('admin_token', token);
-            showDash();
-        } catch(e) {
-            alert(e.message);
+    if (!token) {
+        // 尝试从主站 Token 获取
+        const mainToken = localStorage.getItem('huabobo_token');
+        const userDataStr = localStorage.getItem('huabobo_user');
+        if (mainToken && userDataStr) {
+            try {
+                const userData = JSON.parse(userDataStr);
+                if (userData.role === 'admin') {
+                    token = mainToken;
+                    localStorage.setItem('admin_token', token);
+                }
+            } catch(e) {}
         }
     }
 
-    function logoutAdmin() {
-        localStorage.removeItem('admin_token');
-        location.reload();
+    if(token) { 
+        showDash(); 
+    } else {
+        // 如果没有管理员权限，重定向回主页
+        alert("请先以管理员身份登录。");
+        window.location.href = '/';
+    }
+
+    function goBackHome() {
+        window.location.href = '/';
+    }
+
+    let trendChart = null;
+
+    function switchTab(tab) {
+        // Hide all views
+        document.getElementById('content-dashboard').classList.add('hidden');
+        document.getElementById('content-users').classList.add('hidden');
+        document.getElementById('content-projects').classList.add('hidden');
+        
+        // Reset nav styles
+        const tabs = ['dashboard', 'users', 'projects', 'resources'];
+        tabs.forEach(t => {
+            const el = document.getElementById('nav-' + t);
+            if (el) {
+                el.classList.remove('bg-blue-600/20', 'text-blue-400', 'border', 'border-blue-500/20');
+                el.classList.add('hover:bg-slate-800', 'text-slate-300');
+            }
+        });
+
+        // Activate selected tab
+        const activeNav = document.getElementById('nav-' + tab);
+        if (activeNav) {
+            activeNav.classList.add('bg-blue-600/20', 'text-blue-400', 'border', 'border-blue-500/20');
+            activeNav.classList.remove('hover:bg-slate-800', 'text-slate-300');
+        }
+
+        const title = document.getElementById('view-title');
+        document.getElementById('content-resources').classList.add('hidden'); // Ensure resources is hidden if not active
+        
+        if (tab === 'dashboard') {
+            document.getElementById('content-dashboard').classList.remove('hidden');
+            title.innerText = '数据看板';
+            loadData();
+        } else if (tab === 'users') {
+            document.getElementById('content-users').classList.remove('hidden');
+            title.innerText = '用户管理';
+            loadUsers();
+        } else if (tab === 'projects') {
+            document.getElementById('content-projects').classList.remove('hidden');
+            title.innerText = '作品管理';
+            loadAllProjects();
+        } else if (tab === 'resources') {
+            document.getElementById('content-resources').classList.remove('hidden');
+            title.innerText = '资源管理';
+            loadModels();
+            loadCarousel();
+        }
+    }
+
+    // Resource Management Logic
+    async function loadModels() {
+        try {
+            const res = await fetch('/api/admin/resources/models', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const models = await res.json();
+            const tbody = document.getElementById('models-table-body');
+            tbody.innerHTML = models.map(m => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 font-bold text-gray-800">${m.name}</td>
+                    <td class="px-6 py-4 text-xs text-gray-400">${m.file_name}</td>
+                    <td class="px-6 py-4 text-xs">${new Date(m.createdAt).toLocaleString()}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteResource('models', '${m.id}')" class="text-red-500 hover:text-red-700 font-medium">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch(e) { console.error(e); }
+    }
+
+    async function loadCarousel() {
+        try {
+            const res = await fetch('/api/admin/resources/carousel', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const images = await res.json();
+            const tbody = document.getElementById('carousel-table-body');
+            tbody.innerHTML = images.map(img => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <img src="/api/resources/carousel/${img.id}" class="w-20 h-12 object-cover rounded border">
+                    </td>
+                    <td class="px-6 py-4 font-mono text-xs">${img.order}</td>
+                    <td class="px-6 py-4 text-xs text-gray-400">${img.file_name}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteResource('carousel', '${img.id}')" class="text-red-500 hover:text-red-700 font-medium">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch(e) { console.error(e); }
+    }
+
+    function openUploadModal(type) {
+        document.getElementById('upload-type').value = type;
+        document.getElementById('modal-title').innerText = type === 'models' ? '上传 3D 模型' : '上传轮播图';
+        document.getElementById('name-field').style.display = type === 'models' ? 'block' : 'none';
+        document.getElementById('order-field').style.display = type === 'carousel' ? 'block' : 'none';
+        document.getElementById('preview-area').style.display = type === 'models' ? 'block' : 'none';
+        document.getElementById('file-hint').innerText = type === 'models' ? '支持 .glb, .gltf, .obj 格式' : '支持 .jpg, .png 格式';
+        document.getElementById('resource-file').accept = type === 'models' ? '.glb,.gltf,.obj' : '.jpg,.jpeg,.png';
+        document.getElementById('upload-modal').classList.remove('hidden');
+        
+        // Clear previous preview
+        document.getElementById('upload-preview-container').innerHTML = '<span class="text-xs text-slate-400">等待选择文件...</span>';
+        currentGeneratedThumbnail = null;
+    }
+
+    function closeUploadModal() {
+        document.getElementById('upload-modal').classList.add('hidden');
+        document.getElementById('upload-form').reset();
+        currentGeneratedThumbnail = null;
+    }
+
+    let currentGeneratedThumbnail = null;
+
+
+    // Listen for file selection to generate preview
+    document.getElementById('resource-file').onchange = async function(e) {
+        const type = document.getElementById('upload-type').value;
+        if (type !== 'models' || !this.files[0]) return;
+
+        const container = document.getElementById('upload-preview-container');
+        container.innerHTML = '<div class="w-8 h-8 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>';
+
+        try {
+            const file = this.files[0];
+            const url = URL.createObjectURL(file);
+            const ext = file.name.split('.').pop().toLowerCase();
+            
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf8fafc);
+            const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(300, 300);
+            
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambient);
+            const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+            sun.position.set(5, 10, 7);
+            scene.add(sun);
+
+            let mesh;
+            if (ext === 'glb' || ext === 'gltf') {
+                const loader = new THREE.GLTFLoader();
+                const dracoLoader = new THREE.DRACOLoader();
+                dracoLoader.setDecoderPath('lib/draco/');
+                loader.setDRACOLoader(dracoLoader);
+                const gltf = await loader.loadAsync(url);
+                mesh = gltf.scene;
+            } else if (ext === 'obj') {
+                const loader = new THREE.OBJLoader();
+                mesh = await loader.loadAsync(url);
+            }
+
+            if (mesh) {
+                scene.add(mesh);
+                const box = new THREE.Box3().setFromObject(mesh);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                camera.position.set(center.x + maxDim, center.y + maxDim, center.z + maxDim);
+                camera.lookAt(center);
+                
+                renderer.render(scene, camera);
+                currentGeneratedThumbnail = renderer.domElement.toDataURL('image/webp', 0.7);
+                container.innerHTML = `<img src="${currentGeneratedThumbnail}" class="w-full h-full object-contain p-2">`;
+                
+                // Cleanup
+                URL.revokeObjectURL(url);
+                renderer.dispose();
+            }
+        } catch (e) {
+            console.error("Preview generation failed", e);
+            container.innerHTML = '<span class="text-xs text-red-400">预览生成失败</span>';
+        }
+    };
+
+    async function handleUpload(e) {
+        e.preventDefault();
+        const type = document.getElementById('upload-type').value;
+        const fileInput = document.getElementById('resource-file');
+        if (!fileInput.files[0]) return;
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        if (type === 'models') {
+            formData.append('name', document.getElementById('resource-name').value);
+            if (currentGeneratedThumbnail) {
+                formData.append('thumbnail', currentGeneratedThumbnail);
+            }
+        } else {
+            formData.append('order', document.getElementById('resource-order').value);
+        }
+
+
+        try {
+            const res = await fetch(`/api/admin/resources/${type}`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: formData
+            });
+            if (res.ok) {
+                closeUploadModal();
+                if (type === 'models') loadModels();
+                else loadCarousel();
+            } else {
+                const data = await res.json();
+                alert(data.error || "上传失败");
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function deleteResource(type, id) {
+        if (!confirm('确定要永久删除此资源吗？')) return;
+        try {
+            const res = await fetch(`/api/admin/resources/${type}/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+                if (type === 'models') loadModels();
+                else loadCarousel();
+            } else {
+                alert("删除失败");
+            }
+        } catch(e) { console.error(e); }
+    }
+
+
+    async function loadAllProjects() {
+        try {
+            const res = await fetch('/api/admin/projects', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const projects = await res.json();
+            const tbody = document.getElementById('projects-table-body');
+            tbody.innerHTML = projects.map(p => {
+                let thumbSrc = '';
+                if (p.thumbnail) {
+                    try {
+                        const thumbs = JSON.parse(p.thumbnail);
+                        thumbSrc = Array.isArray(thumbs) ? thumbs[0] : p.thumbnail;
+                    } catch(e) {
+                        thumbSrc = p.thumbnail;
+                    }
+                }
+
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 font-mono text-xs text-gray-400">${p.id.substring(0,8)}...</td>
+                    <td class="px-6 py-4">
+                        ${thumbSrc ? `<img src="${thumbSrc}" class="w-12 h-12 rounded object-cover border bg-gray-50">` : '<span class="text-gray-300">无图</span>'}
+                    </td>
+                    <td class="px-6 py-4 font-bold text-gray-800">${p.name}</td>
+                    <td class="px-6 py-4">${p.User ? p.User.username : '未知'}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-[10px] rounded-full uppercase tracking-wider ${p.is_public ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'}">${p.is_public ? '公开' : '私有'}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteProject('${p.id}', true)" class="text-red-500 hover:text-red-700 font-medium">删除</button>
+                    </td>
+                </tr>`;
+            }).join('');
+
+        } catch(e) { console.error(e); }
+    }
+
+    async function loadUsers() {
+        try {
+            const res = await fetch('/api/admin/users', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const users = await res.json();
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = users.map(u => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 font-mono text-xs text-gray-400">${u.id.substring(0,8)}...</td>
+                    <td class="px-6 py-4 font-bold text-gray-800">${u.username}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-[10px] rounded-full uppercase tracking-wider ${u.role === 'admin' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'}">${u.role}</span>
+                    </td>
+                    <td class="px-6 py-4 text-xs">${new Date(u.createdAt).toLocaleString()}</td>
+                    <td class="px-6 py-4 text-right">
+                        ${u.role !== 'admin' ? `<button onclick="deleteUser('${u.id}')" class="text-red-500 hover:text-red-700 font-medium">注销账号</button>` : '<span class="text-gray-300 text-xs italic">受保护</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        } catch(e) { console.error(e); }
+    }
+
+
+
+    async function deleteUser(id) {
+        if(!confirm('确定要永久注销此用户吗？其所有作品也将一并删除。')) return;
+        try {
+            const res = await fetch('/api/admin/user/' + id, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if(res.ok) {
+                loadUsers();
+            } else {
+                const data = await res.json();
+                alert(data.error || "删除失败");
+            }
+        } catch(e) { console.error(e); }
     }
 
     function showDash() {
-        document.getElementById('login-view').classList.add('hidden');
-        document.getElementById('dash-view').classList.remove('hidden');
+        const dashView = document.getElementById('dash-view');
+        if (dashView) dashView.classList.remove('hidden');
         loadData();
     }
 
@@ -133,36 +545,63 @@
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             if(res.status === 401 || res.status === 403) {
-                return logoutAdmin();
+                localStorage.removeItem('admin_token');
+                alert("登录已过期，请重新登录。");
+                window.location.href = '/';
+                return;
             }
             const data = await res.json();
             document.getElementById('stat-users').innerText = data.userCount;
             document.getElementById('stat-projects').innerText = data.projectCount;
             document.getElementById('stat-likes').innerText = data.likeCount;
             
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = data.latestProjects.map(p => `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 font-mono text-xs text-gray-400">${p.id.substring(0,8)}...</td>
-                    <td class="px-6 py-4">
-                        ${p.thumbnail ? `<img src="${p.thumbnail}" class="w-12 h-12 rounded object-cover border">` : '无图'}
-                    </td>
-                    <td class="px-6 py-4 font-bold text-gray-800">${p.name}</td>
-                    <td class="px-6 py-4">${p.User ? p.User.username : '未知'}</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-[10px] rounded-full uppercase tracking-wider ${p.is_public ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'}">${p.is_public ? '公开' : '私有'}</span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        <button onclick="deleteProject('${p.id}')" class="text-red-500 hover:text-red-700 font-medium">删除</button>
-                    </td>
-                </tr>
-            `).join('');
+            renderChart(data.trendData);
         } catch(e) {
             console.error(e);
         }
     }
 
-    async function deleteProject(id) {
+    function renderChart(trend) {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        if (trendChart) trendChart.destroy();
+
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: trend.map(t => t.date),
+                datasets: [
+                    {
+                        label: '新增用户',
+                        data: trend.map(t => t.users),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: '新增作品',
+                        data: trend.map(t => t.projects),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+
+    async function deleteProject(id, isManageView = false) {
         if(!confirm('该操作将永久删除此作品，确认？')) return;
         try {
             const res = await fetch('/api/admin/project/' + id, {
@@ -170,7 +609,8 @@
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             if(res.ok) {
-                loadData();
+                if (isManageView) loadAllProjects();
+                else loadData();
             } else {
                 alert("删除失败");
             }

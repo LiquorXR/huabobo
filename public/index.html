@@ -9,8 +9,9 @@
     <link rel="preload" href="lib/mediapipe/hands_solution_packed_assets.data" as="fetch" crossorigin="anonymous">
     
     <script src="lib/three/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="lib/three/GLTFLoader.js"></script>
+    <script src="lib/three/DRACOLoader.js"></script>
+    <script src="lib/three/OBJLoader.js"></script>
     <script src="lib/three/OrbitControls.js"></script>
     <script src="lib/three/OBJExporter.js"></script>
     <script src="lib/three/STLExporter.js"></script>
@@ -18,8 +19,8 @@
     <script src="lib/mediapipe/camera_utils.js"></script>
     <script src="lib/mediapipe/drawing_utils.js"></script>
     <!-- UI Framework & Icons (Current CDN, suggested for local download in public/lib/) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="lib/tailwind.min.js"></script>
+    <script src="lib/lucide/lucide.min.js"></script>
     
     <!-- 核心样式与资源本地化 -->
     <link rel="stylesheet" href="css/main.css">
@@ -28,9 +29,9 @@
 </head>
 <body>
     <!-- Top Bar -->
-    <header class="fixed top-0 inset-x-0 z-[100] px-6 py-4 lg:px-10 lg:py-6 flex flex-row justify-between items-center gap-6 pointer-events-none">
+    <header class="fixed top-0 inset-x-0 z-[100] px-6 py-4 lg:px-10 lg:py-6 flex flex-row justify-between items-start lg:items-center gap-6 pointer-events-none">
         <!-- Left: Title Component (Calligraphy Style) -->
-        <div class="flex items-center pointer-events-auto">
+        <div class="flex items-center pointer-events-auto mt-1 lg:mt-0">
             <div class="flex items-center gap-2 group transition-all duration-700 hover:scale-[1.02]">
                 <div class="flex flex-col items-end shrink-0 opacity-40 leading-tight">
                     <span class="text-amber-700 font-black text-[10px] lg:text-[12px] tracking-[0.4em] uppercase block">Digital</span>
@@ -50,21 +51,24 @@
         </div>
 
         <!-- Right: Actions Menu -->
-        <div class="flex items-center gap-3 pointer-events-auto">
-            <!-- Community Button -->
-            <button onclick="UI.toggleCommunity()" class="bg-white/70 backdrop-blur-md text-rose-500 border border-white/50 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-white transition-all active:scale-95">
-                <i data-lucide="compass" size="18"></i>
-                <span class="hidden sm:inline text-sm">灵感社区</span>
-            </button>
-            
-            <!-- Account Button -->
-            <button onclick="UI.toggleAccount()" class="bg-white/70 backdrop-blur-md text-blue-500 border border-white/50 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-white transition-all active:scale-95" id="nav-account-btn">
-                <i data-lucide="user" size="18"></i>
-                <span class="hidden sm:inline text-sm" id="nav-account-text">登录</span>
-            </button>
+        <div class="flex flex-col lg:flex-row items-end lg:items-center gap-3 pointer-events-none">
+            <!-- Row 2 (Mobile) / Left (PC): Community & Account -->
+            <div class="flex items-center gap-3 pointer-events-auto order-2 lg:order-1">
+                <!-- Community Button -->
+                <button onclick="UI.toggleCommunity()" class="bg-white/70 backdrop-blur-md text-rose-500 border border-white/50 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-white transition-all active:scale-95">
+                    <i data-lucide="compass" size="18"></i>
+                    <span class="hidden sm:inline text-sm">灵感社区</span>
+                </button>
+                
+                <!-- Account Button -->
+                <button onclick="UI.toggleAccount()" class="bg-white/70 backdrop-blur-md text-blue-500 border border-white/50 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-white transition-all active:scale-95" id="nav-account-btn">
+                    <i data-lucide="user" size="18"></i>
+                    <span class="hidden sm:inline text-sm" id="nav-account-text">登录</span>
+                </button>
+            </div>
 
-            <!-- Export Menu -->
-            <div id="export-menu-container" class="relative shrink-0">
+            <!-- Row 1 (Mobile) / Right (PC): Export Menu -->
+            <div id="export-menu-container" class="relative shrink-0 pointer-events-auto order-1 lg:order-2">
                 <button class="export-btn group" onclick="UI.toggleExportMenu()">
                     <div class="bg-amber-500 text-amber-950 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg shadow-amber-500/20 group-hover:bg-amber-400 transition-all active:scale-95">
                         <i data-lucide="share-2" size="18"></i>
@@ -414,5 +418,39 @@
             Carousel.init();
         };
     </script>
+
+    <!-- Entry Login Overlay -->
+    <div id="entry-login-overlay" class="fixed inset-0 flex items-center justify-center hidden opacity-0 transition-all duration-1000 z-[1000]" onclick="UI.dismissLoginCard(event)">
+        <!-- Initial Entry Hint (Bottom) -->
+        <div id="entry-guide-hint" class="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 cursor-pointer group transition-all duration-500 hover:-translate-y-2" onclick="UI.popLoginCard()">
+            <span class="text-white text-[10px] font-black tracking-[0.4em] uppercase opacity-60 group-hover:opacity-100 transition-opacity">点击开启艺术之旅</span>
+            <div class="w-10 h-10 rounded-full border border-white/30 flex items-center justify-center text-white backdrop-blur-md bg-white/10 group-hover:bg-white/20 transition-all shadow-2xl">
+                <i data-lucide="chevron-up" class="animate-bounce-slow" size="20"></i>
+            </div>
+        </div>
+
+        <!-- Login Card (Hidden by default) -->
+        <div id="entry-login-card" class="login-card w-[85vw] max-w-[280px] rounded-[2rem] py-4 px-6 sm:py-6 sm:px-8 flex flex-col gap-4 scale-90 opacity-0 translate-y-8 transition-all duration-700 pointer-events-none">
+            <div class="flex justify-center border-b border-slate-100">
+                <button onclick="UI.setEntryTab('login')" id="tab-login" class="login-tab active py-2 text-xs">登录账号</button>
+                <button onclick="UI.setEntryTab('register')" id="tab-register" class="login-tab py-2 text-xs">注册新禧</button>
+            </div>
+
+            <div id="entry-auth-form" class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5 px-1">艺名 / 用户名</label>
+                    <input id="entry-username" type="text" class="auth-input py-2.5 text-sm text-black" placeholder="输入您的昵称">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5 px-1">暗号 / 密码</label>
+                    <input id="entry-password" type="password" class="auth-input py-2.5 text-sm text-black" placeholder="输入密码">
+                </div>
+                <div class="pt-2">
+                    <button onclick="UI.submitEntryAuth()" id="entry-submit-btn" class="auth-btn py-3 text-sm">开启艺术之旅</button>
+                    <button onclick="UI.hideEntryLogin()" class="w-full mt-3 py-1 text-black text-[10px] font-bold hover:opacity-70 transition-colors tracking-widest uppercase">跳过登录</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

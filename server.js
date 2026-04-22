@@ -2,14 +2,44 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
+const os = require('os');
+const crypto = require('crypto');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+
+// Ensure JWT_SECRET is configured
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'huabobo_secret_key_change_in_prod') {
+    const newSecret = crypto.randomBytes(32).toString('hex');
+    process.env.JWT_SECRET = newSecret;
+    const envPath = path.join(__dirname, '.env');
+    try {
+        if (fs.existsSync(envPath)) {
+            let content = fs.readFileSync(envPath, 'utf-8');
+            if (content.includes('JWT_SECRET=')) {
+                content = content.replace(/JWT_SECRET=.*/, `JWT_SECRET=${newSecret}`);
+            } else {
+                content += `\nJWT_SECRET=${newSecret}`;
+            }
+            fs.writeFileSync(envPath, content);
+            console.log('[SECURITY] Generated and persisted new JWT_SECRET to .env');
+        } else {
+            fs.writeFileSync(envPath, `JWT_SECRET=${newSecret}\n`);
+            console.log('[SECURITY] Created .env and persisted new JWT_SECRET');
+        }
+    } catch (err) {
+        console.warn('[SECURITY] Generated new JWT_SECRET but failed to persist to .env:', err.message);
+    }
+}
+
 const { syncDatabase } = require('./src/models');
 const authRoutes = require('./src/routes/auth').router;
 const projectRoutes = require('./src/routes/projects');
 const communityRoutes = require('./src/routes/community');
 const adminRoutes = require('./src/routes/admin');
+const resourceRoutes = require('./src/routes/resources');
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,7 +50,9 @@ syncDatabase().catch(err => console.error("DB Sync Error:", err));
 // Middleware
 app.use(compression());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 
 // Security: Rate limiting for the Gemini API
 const apiLimiter = rateLimit({
@@ -39,6 +71,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/resources', resourceRoutes);
+
 
 app.get('/api/config', (req, res) => {
     res.json({
@@ -127,7 +161,55 @@ app.get('*', (req, res) => {
     }
 });
 
+// Helper to get local IP address
+function getLocalIP() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return '0.0.0.0';
+}
+
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on http://0.0.0.0:${PORT}`);
-});
+const localIP = getLocalIP();
+const protocol = process.env.USE_HTTPS === 'true' ? 'https' : 'http';
+
+if (process.env.USE_HTTPS === 'true') {
+    try {
+        const keyPath = path.join(__dirname, process.env.HTTPS_KEY_PATH || 'key.pem');
+        const certPath = path.join(__dirname, process.env.HTTPS_CERT_PATH || 'cert.pem');
+        
+        if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
+            throw new Error(`HTTPS certificates not found at ${keyPath} or ${certPath}. Please run "node scripts/setup-https.js" first.`);
+        }
+
+        const options = {
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath)
+        };
+
+        https.createServer(options, app).listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Secure Server is running on:`);
+            console.log(`   - Local:    https://localhost:${PORT}`);
+            console.log(`   - Network:  https://${localIP}:${PORT}`);
+        });
+    } catch (err) {
+        console.error("Failed to start HTTPS server:", err.message);
+        console.log("Falling back to HTTP...");
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Server is running on:`);
+            console.log(`   - Local:    http://localhost:${PORT}`);
+            console.log(`   - Network:  http://${localIP}:${PORT}`);
+        });
+    }
+} else {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server is running on:`);
+        console.log(`   - Local:    http://localhost:${PORT}`);
+        console.log(`   - Network:  http://${localIP}:${PORT}`);
+    });
+}

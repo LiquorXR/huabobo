@@ -15,7 +15,13 @@ router.post('/register', async (req, res) => {
         if (existing) return res.status(400).json({ error: "Username already exists" });
 
         const password_hash = await bcrypt.hash(password, 10);
-        const user = await User.create({ username, password_hash });
+        
+        // Admin Bootstrap: If this is the first user, make them an admin
+        const userCount = await User.count();
+        const role = userCount === 0 ? 'admin' : 'user';
+        
+        const user = await User.create({ username, password_hash, role });
+        if (userCount === 0) console.log(`[AUTH] Admin Bootstrap: First user '${username}' created as ADMIN.`);
         
         const token = jwt.sign({ userId: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
         res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
@@ -57,4 +63,27 @@ const authMiddleware = (req, res, next) => {
     });
 };
 
+router.put('/username', authMiddleware, async (req, res) => {
+    try {
+        const { newUsername } = req.body;
+        if (!newUsername) return res.status(400).json({ error: "New username required" });
+        
+        const existing = await User.findOne({ where: { username: newUsername } });
+        if (existing) return res.status(400).json({ error: "Username already exists" });
+        
+        const user = await User.findByPk(req.user.userId);
+        if (!user) return res.status(404).json({ error: "User not found" });
+        
+        user.username = newUsername;
+        await user.save();
+        
+        // Return new token with updated username
+        const token = jwt.sign({ userId: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+        res.json({ success: true, token, user: { id: user.id, username: user.username, role: user.role } });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = { router, authMiddleware };
+

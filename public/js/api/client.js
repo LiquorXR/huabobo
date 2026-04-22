@@ -49,6 +49,15 @@ export const API = {
         this.setUser(data.user);
         return data.user;
     },
+    async updateUsername(newUsername) {
+        const data = await this.request('/api/auth/username', {
+            method: 'PUT',
+            body: JSON.stringify({ newUsername })
+        });
+        if (data.token) this.setToken(data.token);
+        if (data.user) this.setUser(data.user);
+        return data.user;
+    },
     
     // Projects
     async getMyProjects() {

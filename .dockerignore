@@ -4,5 +4,13 @@ node_modules
 .env
 .dev.vars
 .wrangler
-functions
-.kilo
+*.pem
+database/
+*.sqlite
+*.sqlite3
+scratch/
+public/models/manifest.json
+npm-debug.log*
+.vscode/
+.idea/
+.DS_Store

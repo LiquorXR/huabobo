@@ -27,8 +27,114 @@ export const UI = {
     updateNavAccount() {
         const user = window.API ? window.API.getUser() : null;
         const textSpan = document.getElementById('nav-account-text');
+        const btn = document.getElementById('nav-account-btn');
         if (textSpan) {
-            textSpan.innerText = user ? user.username : '登录';
+            textSpan.innerText = user ? (user.role === 'admin' ? '管理员' : user.username) : '登录';
+            if (user && user.role === 'admin' && btn) {
+                btn.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
+            } else if (btn) {
+                btn.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
+            }
+        }
+    },
+
+    popLoginCard() {
+        const card = document.getElementById('entry-login-card');
+        const hint = document.getElementById('entry-guide-hint');
+        if (card) card.classList.add('active');
+        if (hint) {
+            hint.style.opacity = '0';
+            hint.style.pointerEvents = 'none';
+        }
+    },
+
+    dismissLoginCard(event) {
+        const card = document.getElementById('entry-login-card');
+        const hint = document.getElementById('entry-guide-hint');
+        
+        // 只有当点击的是背景遮罩层本身 (event.target === event.currentTarget)
+        // 且卡片当前处于激活状态时，才执行隐藏
+        if (event.target === event.currentTarget && card && card.classList.contains('active')) {
+            card.classList.remove('active');
+            if (hint) {
+                hint.style.opacity = '1';
+                hint.style.pointerEvents = 'auto';
+            }
+        }
+    },
+
+    showEntryLogin() {
+        const overlay = document.getElementById('entry-login-overlay');
+        if (!overlay) return;
+        
+        // Reset states
+        const card = document.getElementById('entry-login-card');
+        const hint = document.getElementById('entry-guide-hint');
+        if (card) card.classList.remove('active');
+        if (hint) {
+            hint.style.opacity = '1';
+            hint.style.pointerEvents = 'auto';
+        }
+        
+        // 响应式背景逻辑：移动端使用 2.png，桌面端使用 1.png
+        const isMobile = window.innerWidth < 768;
+        const photoName = isMobile ? '2.png' : '1.png';
+        const randomPhoto = `backgrounds/${photoName}`;
+        
+        overlay.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('${randomPhoto}')`;
+        overlay.style.backgroundSize = "cover";
+        overlay.style.backgroundPosition = "center";
+        
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+            overlay.classList.add('opacity-100');
+            if (window.lucide) window.lucide.createIcons();
+        }, 10);
+    },
+
+
+    hideEntryLogin() {
+        const overlay = document.getElementById('entry-login-overlay');
+        if (!overlay) return;
+        overlay.classList.remove('opacity-100');
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 700);
+    },
+
+    _entryTab: 'login',
+    setEntryTab(tab) {
+        this._entryTab = tab;
+        const loginTab = document.getElementById('tab-login');
+        const registerTab = document.getElementById('tab-register');
+        const submitBtn = document.getElementById('entry-submit-btn');
+
+        if (tab === 'login') {
+            loginTab.classList.add('active');
+            registerTab.classList.remove('active');
+            submitBtn.innerText = '开启艺术之旅';
+        } else {
+            loginTab.classList.remove('active');
+            registerTab.classList.add('active');
+            submitBtn.innerText = '加入数字传承';
+        }
+    },
+
+    async submitEntryAuth() {
+        const userStr = document.getElementById('entry-username').value;
+        const passStr = document.getElementById('entry-password').value;
+        if (!userStr || !passStr) return alert("请输入完整的账号密码");
+
+        try {
+            if (this._entryTab === 'login') {
+                await window.API.login(userStr, passStr);
+            } else {
+                await window.API.register(userStr, passStr);
+            }
+            this.hideEntryLogin();
+            this.updateNavAccount();
+        } catch(e) {
+            alert((this._entryTab === 'login' ? "登录" : "注册") + "失败：" + e.message);
         }
     },
 
@@ -169,9 +275,35 @@ export const UI = {
         const user = window.API ? window.API.getUser() : null;
 
         if (user) {
-            title.innerText = '我的工作台 - ' + user.username;
+            title.innerText = '个人中心';
             container.innerHTML = `
-                <div class="flex gap-4 mb-6">
+                ${user.role === 'admin' ? `
+                <div class="mb-6 p-4 bg-slate-900 text-white rounded-2xl flex flex-col gap-3 shadow-xl">
+                    <div class="flex items-center gap-2 text-amber-400">
+                        <i data-lucide="shield-check" size="20"></i>
+                        <span class="font-black text-sm uppercase tracking-widest">系统管理员</span>
+                    </div>
+                    <a href="/admin.html" class="w-full py-2 bg-amber-500 text-center text-amber-950 rounded-xl font-bold text-sm hover:bg-amber-400 transition-all">进入管理后台</a>
+                </div>
+                ` : ''}
+
+                <!-- User Info Profile -->
+                <div class="mb-6 p-5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-lg uppercase">
+                            ${user.username.substring(0,1)}
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">我的艺名</p>
+                            <h4 class="font-black text-slate-800 text-lg">${user.username}</h4>
+                        </div>
+                    </div>
+                    <button onclick="UI.changeUsername()" class="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all">
+                        <i data-lucide="edit-3" size="18"></i>
+                    </button>
+                </div>
+
+                <div class=\"flex gap-4 mb-6\">
                     <button onclick="UI.saveCurrentProjectAsNew()" class="flex-1 bg-amber-100 text-amber-700 py-3 rounded-xl font-bold hover:bg-amber-200 transition-colors">存为新作品</button>
                     ${this.app && this.app._activeProjectId ? `<button onclick="UI.updateCurrentProject()" class="flex-1 bg-emerald-100 text-emerald-700 py-3 rounded-xl font-bold hover:bg-emerald-200 transition-colors">更新保存</button>` : ''}
                 </div>
@@ -209,34 +341,163 @@ export const UI = {
         if (!list) return;
         try {
             const projects = await window.API.getMyProjects();
-            if (projects.length === 0) {
-                list.innerHTML = '<div class="text-center text-slate-400 py-6 text-sm">还没有保存过作品</div>';
-                return;
-            }
-            list.innerHTML = projects.map(p => `
-                <div class="project-card relative group">
-                    ${p.thumbnail ? `<img src="${p.thumbnail}" class="w-full h-32 object-contain bg-slate-50">` : '<div class="w-full h-32 bg-slate-100 flex items-center justify-center text-slate-300">无预览</div>'}
-                    <div class="p-3">
-                        <h4 class="font-bold text-slate-700">${p.name}</h4>
-                        <div class="flex justify-between items-center mt-2">
-                            <span class="text-xs text-slate-400">${new Date(p.updatedAt).toLocaleDateString()}</span>
-                            ${p.is_public ? '<span class="text-[10px] bg-rose-100 text-rose-500 px-2 py-0.5 rounded-full">已公开发布</span>' : ''}
+            list.innerHTML = projects.map(p => {
+                let thumbs = [];
+                try {
+                    thumbs = JSON.parse(p.thumbnail);
+                    if (!Array.isArray(thumbs)) thumbs = [p.thumbnail];
+                } catch(e) {
+                    thumbs = p.thumbnail ? [p.thumbnail] : [];
+                }
+
+                return `
+                <div class="project-card relative group bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm transition-all hover:shadow-xl" id="project-card-${p.id}">
+                    <!-- Image Container with Arrows -->
+                    <div class="relative w-full h-40 bg-[#f8fafc] flex items-center justify-center overflow-hidden">
+                        ${thumbs.length > 0 ? `
+                            <img id="thumb-img-${p.id}" src="${thumbs[0]}" data-index="0" data-thumbs='${JSON.stringify(thumbs)}' class="w-full h-full object-contain transition-all duration-500">
+                            ${thumbs.length > 1 ? `
+                                <!-- Arrows -->
+                                <button onclick="UI.prevThumbnail('${p.id}', event)" class="absolute left-1.5 top-1/2 -translate-y-1/2 w-5 h-5 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm z-20">
+                                    <i data-lucide="chevron-left" size="8"></i>
+                                </button>
+                                <button onclick="UI.nextThumbnail('${p.id}', event)" class="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm z-20">
+                                    <i data-lucide="chevron-right" size="8"></i>
+                                </button>
+                                <!-- Indicators -->
+
+                                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                                    ${thumbs.map((_, idx) => `
+                                        <div class="thumb-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-all ${idx === 0 ? 'bg-amber-500 scale-125' : ''}"></div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        ` : '<div class="text-slate-300">无预览</div>'}
+                        
+                        <!-- Top-Right Menu Button -->
+                        <div class="absolute top-2 right-2 z-30">
+                            <button onclick="UI.toggleProjectMenu('${p.id}', event)" class="w-5 h-5 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-slate-600 shadow-sm hover:bg-white transition-all">
+                                <i data-lucide="more-vertical" size="8"></i>
+                            </button>
+                            <!-- Dropdown Menu -->
+                            <div id="project-menu-${p.id}" class="hidden absolute right-0 mt-1 w-24 bg-white rounded-md shadow-2xl border border-slate-100 py-1 animate-in fade-in zoom-in duration-200">
+                                <button onclick="UI.loadProject('${p.id}')" class="w-full px-2 py-1 text-left text-[10px] font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1"><i data-lucide="edit-3" size="6"></i> 编辑作品</button>
+                                <button onclick="UI.shareProject('${p.id}', ${!p.is_public})" class="w-full px-2 py-1 text-left text-[10px] font-bold ${p.is_public ? 'text-amber-600' : 'text-emerald-600'} hover:bg-slate-50 flex items-center gap-1">
+                                    <i data-lucide="${p.is_public ? 'eye-off' : 'share'}" size="6"></i> ${p.is_public ? '取消发布' : '发布社区'}
+                                </button>
+                                <div class="h-px bg-slate-100 my-0.5"></div>
+                                <button onclick="UI.deleteProject('${p.id}')" class="w-full px-2 py-1 text-left text-[10px] font-bold text-red-500 hover:bg-red-50 flex items-center gap-1"><i data-lucide="trash-2" size="6"></i> 删除记录</button>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="p-2 bg-white">
+                        <h4 class="text-xs font-bold text-slate-800 truncate">${p.name}</h4>
+                        <div class="flex justify-between items-center mt-0.5">
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">${new Date(p.updatedAt).toLocaleDateString()}</span>
+                            ${p.is_public ? '<span class="px-1 py-0.5 bg-rose-50 text-rose-500 text-[7px] font-black rounded-full uppercase tracking-tighter">Live</span>' : ''}
                         </div>
                     </div>
-                    <div class="absolute inset-0 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm">
-                        <button onclick="UI.loadProject('${p.id}')" class="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 shadow-lg" title="加载编辑"><i data-lucide="download" size="18"></i></button>
-                        <button onclick="UI.shareProject('${p.id}', ${!p.is_public})" class="p-2 ${p.is_public ? 'bg-amber-500 hover:bg-amber-600' : 'bg-rose-500 hover:bg-rose-600'} text-white rounded-full shadow-lg" title="${p.is_public ? '取消发布' : '发布到社区'}">
-                            <i data-lucide="${p.is_public ? 'eye-off' : 'share'}" size="18"></i>
-                        </button>
-                        <button onclick="UI.deleteProject('${p.id}')" class="p-2 bg-slate-200 text-red-500 rounded-full hover:bg-slate-300" title="删除"><i data-lucide="trash-2" size="18"></i></button>
-                    </div>
+
+
                 </div>
-            `).join('');
+                `;
+            }).join('');
+
+            if (projects.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-400 py-10 text-xs font-medium">还没有保存过作品，快去开启第一屉吧！</div>';
+            }
+
             if (window.lucide) window.lucide.createIcons();
+
+
+
         } catch (e) {
             list.innerHTML = '<div class="text-center text-red-400 py-6 text-sm">加载失败</div>';
         }
     },
+
+    switchThumbnail(projectId, src, index, event) {
+        if (event) event.stopPropagation();
+        const img = document.getElementById(`thumb-img-${projectId}`);
+        if (img) {
+            img.src = src;
+            img.dataset.index = index;
+        }
+
+        // Update dots
+        const card = document.getElementById(`project-card-${projectId}`) || document.getElementById(`community-card-${projectId}`);
+        if (card) {
+            const dots = card.querySelectorAll('.thumb-dot');
+            dots.forEach((dot, i) => {
+                if (i === index) {
+                    dot.classList.add('bg-amber-500', 'scale-125');
+                    dot.classList.remove('bg-slate-300');
+                } else {
+                    dot.classList.remove('bg-amber-500', 'scale-125');
+                    dot.classList.add('bg-slate-300');
+                }
+            });
+        }
+    },
+
+    nextThumbnail(projectId, event) {
+        if (event) event.stopPropagation();
+        const img = document.getElementById(`thumb-img-${projectId}`);
+        if (!img || !img.dataset.thumbs) return;
+        const thumbs = JSON.parse(img.dataset.thumbs);
+        let idx = parseInt(img.dataset.index || 0);
+        idx = (idx + 1) % thumbs.length;
+        this.switchThumbnail(projectId, thumbs[idx], idx);
+    },
+
+    prevThumbnail(projectId, event) {
+        if (event) event.stopPropagation();
+        const img = document.getElementById(`thumb-img-${projectId}`);
+        if (!img || !img.dataset.thumbs) return;
+        const thumbs = JSON.parse(img.dataset.thumbs);
+        let idx = parseInt(img.dataset.index || 0);
+        idx = (idx - 1 + thumbs.length) % thumbs.length;
+        this.switchThumbnail(projectId, thumbs[idx], idx);
+    },
+
+    toggleProjectMenu(projectId, event) {
+        if (event) event.stopPropagation();
+        const menu = document.getElementById(`project-menu-${projectId}`);
+        if (!menu) return;
+        
+        // Close other menus first
+        document.querySelectorAll('[id^="project-menu-"]').forEach(m => {
+            if (m.id !== `project-menu-${projectId}`) m.classList.add('hidden');
+        });
+
+        menu.classList.toggle('hidden');
+        
+        // Close on outside click
+        const closeMenu = (e) => {
+            if (!menu.contains(e.target) && !event.target.contains(e.target)) {
+                menu.classList.add('hidden');
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+        document.addEventListener('click', closeMenu);
+    },
+
+    touchStartX: 0,
+    handleTouchStart(e) {
+        this.touchStartX = e.touches[0].clientX;
+    },
+    handleTouchEnd(e, projectId) {
+        const touchEndX = e.changedTouches[0].clientX;
+        const diff = touchEndX - this.touchStartX;
+        if (Math.abs(diff) > 50) { // Threshold
+            if (diff > 0) this.prevThumbnail(projectId);
+            else this.nextThumbnail(projectId);
+        }
+    },
+
+
+
 
     async submitLogin() {
         if (!window.API) return;
@@ -262,6 +523,23 @@ export const UI = {
         } catch(e) { alert("注册失败：" + e.message); }
     },
 
+    async changeUsername() {
+        if (!window.API) return;
+        const user = window.API.getUser();
+        const newName = prompt("请输入新的艺名：", user ? user.username : "");
+        if (!newName || newName === user.username) return;
+        
+        try {
+            await window.API.updateUsername(newName);
+            this.renderAuthContent();
+            this.updateNavAccount();
+            this.refreshCommunity(); // Update community author name
+            alert("艺名修改成功！");
+        } catch(e) {
+            alert("修改失败：" + e.message);
+        }
+    },
+
     logout() {
         if (window.API) window.API.clearToken();
         if (this.app) this.app._activeProjectId = null;
@@ -275,11 +553,9 @@ export const UI = {
         if (!name) return;
         try {
             const data = this.app.exportProjectState();
-            let thumbnail = '';
-            if (this.app.currentMesh) {
-                thumbnail = await this.app.captureModelSnapshot(this.app.currentMesh);
-            }
+            const thumbnail = await this.app.captureSceneSnapshot();
             const res = await window.API.saveProject({ name, scene_data: data, thumbnail });
+
             this.app._activeProjectId = res.id;
             this.loadUserProjects();
         } catch (e) { alert("保存失败：" + e.message); }
@@ -289,11 +565,9 @@ export const UI = {
         if (!this.app || !window.API || !this.app._activeProjectId) return;
         try {
             const data = this.app.exportProjectState();
-            let thumbnail = '';
-            if (this.app.currentMesh) {
-                thumbnail = await this.app.captureModelSnapshot(this.app.currentMesh);
-            }
+            const thumbnail = await this.app.captureSceneSnapshot();
             await window.API.saveProject({ id: this.app._activeProjectId, scene_data: data, thumbnail });
+
             this.loadUserProjects();
             alert("已更新！");
         } catch (e) { alert("更新失败：" + e.message); }
@@ -342,16 +616,54 @@ export const UI = {
     async refreshCommunity() {
         const grid = document.getElementById('community-grid');
         if (!grid || !window.API) return;
-        grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">正在获取最新灵感...</div>';
+        grid.innerHTML = '<div class="col-span-full py-20 text-center text-slate-400" style="column-span: all;">正在获取最新灵感...</div>';
+
         try {
             const posts = await window.API.getCommunityPosts(30, 0);
             if (posts.length === 0) {
-                grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400 text-lg">暂无公开作品，快去分享你的创作吧！</div>';
+                grid.innerHTML = `
+                <div class="col-span-full py-20 text-center text-slate-400" style="column-span: all;">
+                    <p class="text-lg font-bold">暂无公开作品</p>
+                    <p class="text-sm opacity-60 mt-1">快去分享你的创作吧！</p>
+                </div>`;
                 return;
             }
-            grid.innerHTML = posts.map(p => `
-                <div class="waterfall-item">
-                    ${p.thumbnail ? `<img src="${p.thumbnail}" class="waterfall-img" loading="lazy">` : '<div class="w-full aspect-[4/3] bg-slate-100"></div>'}
+
+            grid.innerHTML = posts.map(p => {
+                let thumbs = [];
+                try {
+                    thumbs = JSON.parse(p.thumbnail);
+                    if (!Array.isArray(thumbs)) thumbs = [p.thumbnail];
+                } catch(e) {
+                    thumbs = p.thumbnail ? [p.thumbnail] : [];
+                }
+
+                return `
+                <div class="waterfall-item group" id="community-card-${p.id}">
+                    <div class="relative w-full overflow-hidden touch-pan-y" 
+                         ontouchstart="UI.handleTouchStart(event)" 
+                         ontouchend="UI.handleTouchEnd(event, '${p.id}')">
+                        ${thumbs.length > 0 ? `
+                            <img id="thumb-img-${p.id}" src="${thumbs[0]}" data-index="0" data-thumbs='${JSON.stringify(thumbs)}' class="waterfall-img transition-all duration-500">
+                            ${thumbs.length > 1 ? `
+                                <!-- Arrows (Desktop) -->
+                                <button onclick="UI.prevThumbnail('${p.id}', event)" class="absolute left-2 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-lg z-20">
+                                    <i data-lucide="chevron-left" size="12" class="text-slate-800"></i>
+                                </button>
+                                <button onclick="UI.nextThumbnail('${p.id}', event)" class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-lg z-20">
+                                    <i data-lucide="chevron-right" size="12" class="text-slate-800"></i>
+                                </button>
+
+                                <!-- Indicators -->
+
+                                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 bg-black/10 backdrop-blur-md px-2 py-1 rounded-full">
+                                    ${thumbs.map((_, idx) => `
+                                        <div class="thumb-dot w-1.5 h-1.5 rounded-full bg-white/40 transition-all ${idx === 0 ? 'bg-white scale-125' : ''}"></div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        ` : '<div class="w-full aspect-[4/3] bg-slate-100"></div>'}
+                    </div>
                     <div class="waterfall-footer">
                         <div class="flex items-center gap-2">
                             <div class="w-6 h-6 rounded-full bg-gradient-to-br from-amber-200 to-orange-400 text-white font-bold flex items-center justify-center text-[10px] shadow-sm uppercase">${p.author.substring(0,1)}</div>
@@ -365,7 +677,12 @@ export const UI = {
                         </button>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
+
+            if (window.lucide) window.lucide.createIcons();
+
+
         } catch(e) {
             grid.innerHTML = `<div class="col-span-full py-10 text-center text-red-500">无法连接到社区网络</div>`;
         }
@@ -424,31 +741,54 @@ export const UI = {
         if (!grid) return;
 
         try {
-            const response = await fetch('models/manifest.json');
+            const response = await fetch('/api/resources/models');
             const data = await response.json();
-            this.app.modelManifest = data; // Sync back just in case
             
-            grid.innerHTML = data.models.map(model => `
+            // Format to match expected manifest structure
+            this.app.modelManifest = {
+                models: data.map(m => ({
+                    id: m.id,
+                    name: m.name,
+                    file_name: m.file_name,
+                    path: `/api/resources/models/${m.id}`,
+                    thumbnail: m.thumbnail,
+                    type: 'custom'
+                }))
+
+            };
+            // Add default primitive
+            this.app.modelManifest.models.unshift({ id: 'default', name: '圆球面团', type: 'primitive' });
+            
+            if (this.app.modelManifest.models.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-slate-400 py-10">暂无可用的模型资源</div>';
+                return;
+            }
+            
+            grid.innerHTML = this.app.modelManifest.models.map(model => `
                 <div id="model-item-${model.id}" onclick="App.addNewLayer('${model.id}'); UI.toggleModelDialog()" 
                      class="group bg-slate-50 hover:bg-amber-50 p-4 rounded-[2rem] border-2 border-transparent hover:border-amber-200 transition-all cursor-pointer flex flex-col items-center gap-3">
                     <div class="thumbnail-container w-full aspect-square bg-[#f8fafc] rounded-2xl shadow-sm flex items-center justify-center group-hover:scale-95 transition-transform overflow-hidden">
-                        <div class="w-8 h-8 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin"></div>
+                        ${model.thumbnail ? `<img src="${model.thumbnail}" class="w-full h-full object-contain p-2">` : '<div class="w-8 h-8 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin"></div>'}
                     </div>
                     <span class="text-xs font-black text-slate-700 uppercase tracking-widest">${model.name}</span>
                 </div>
             `).join('');
 
-            // Background load and capture thumbnails
-            for (const model of data.models) {
-                this.generateModelPreview(model);
+            // Background load and capture thumbnails if missing
+            for (const model of this.app.modelManifest.models) {
+                if (!model.thumbnail) {
+                    this.generateModelPreview(model);
+                }
             }
+
             
             if (window.lucide) window.lucide.createIcons();
         } catch (e) {
-            console.error("Failed to load models manifest", e);
-            grid.innerHTML = '<p class="col-span-full text-center py-10 text-slate-400">加载模型清单失败</p>';
+            console.error("Failed to load models from API", e);
+            grid.innerHTML = '<p class="col-span-full text-center py-10 text-slate-400">加载模型库失败</p>';
         }
     },
+
 
     async generateModelPreview(model) {
         const item = document.getElementById(`model-item-${model.id}`);
@@ -461,8 +801,10 @@ export const UI = {
                 const geo = new THREE.SphereGeometry(2, 32, 32);
                 mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xffffff }));
             } else {
+                // Ensure we have correct extension info for loaders
                 mesh = await this.app.loadExternalModel(model);
             }
+
             
             const dataUrl = await this.app.captureModelSnapshot(mesh);
             container.innerHTML = `<img src="${dataUrl}" class="w-full h-full object-contain p-2">`;

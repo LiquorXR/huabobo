@@ -45,6 +45,11 @@ export const App = {
         if (typeof lucide !== 'undefined') lucide.createIcons();
         UI.init(this);
         
+        // Show entry login if not authenticated
+        if (window.API && !window.API.getToken()) {
+            setTimeout(() => UI.showEntryLogin(), 1000);
+        }
+
         // Handle window resize
         window.addEventListener('resize', () => this.onWindowResize(), false);
         
@@ -185,14 +190,26 @@ export const App = {
         this.dropLine.visible = false;
         this.scene.add(this.dropLine);
         
-        // Load manifest then add default layer
-        fetch('models/manifest.json')
+        // Load models from DB API
+        fetch('/api/resources/models')
             .then(res => res.json())
             .then(data => {
-                this.modelManifest = data;
+                this.modelManifest = {
+                    models: data.map(m => ({
+                        id: m.id,
+                        name: m.name,
+                        file_name: m.file_name,
+                        path: `/api/resources/models/${m.id}`,
+                        type: 'custom'
+                    }))
+
+                };
+                // Prepend default primitive
+                this.modelManifest.models.unshift({ id: 'default', name: '圆球面团', type: 'primitive' });
                 this.addNewLayer('default');
             })
             .catch(() => this.addNewLayer());
+
     },
 
     async addNewLayer(modelId = 'default') {
@@ -354,13 +371,18 @@ export const App = {
 
     loadExternalModel(modelData) {
         return new Promise((resolve, reject) => {
-            // Fix path: if it doesn't start with http or /, make it relative to models/
             let path = modelData.path;
+            
+            // If path is a relative path to static files, we still support it for now
+            // but the new models will have full /api/resources/models/:id paths
             if (!path.startsWith('http') && !path.startsWith('/') && !path.startsWith('models/')) {
                 path = 'models/' + path;
             }
 
-            const extension = path.split('.').pop().toLowerCase();
+
+            const sourceForExt = modelData.file_name || path;
+            const extension = sourceForExt.split('.').pop().toLowerCase();
+
             let loader;
             
             if (extension === 'glb' || extension === 'gltf') {
@@ -369,6 +391,11 @@ export const App = {
                     return;
                 }
                 loader = new THREE.GLTFLoader();
+                if (typeof THREE.DRACOLoader !== 'undefined') {
+                    const dracoLoader = new THREE.DRACOLoader();
+                    dracoLoader.setDecoderPath('lib/draco/');
+                    loader.setDRACOLoader(dracoLoader);
+                }
             } else if (extension === 'obj') {
                 if (typeof THREE.OBJLoader === 'undefined') {
                     reject(new Error("OBJLoader not loaded"));
@@ -508,7 +535,7 @@ export const App = {
      * @param {THREE.Object3D} object 
      * @returns {Promise<string>} Data URL
      */
-    async captureModelSnapshot(object) {
+    async captureModelSnapshot(object, angle = null) {
         if (!this.snapshotRenderer) {
             this.snapshotRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
             this.snapshotRenderer.setSize(256, 256);
@@ -528,7 +555,6 @@ export const App = {
         const renderer = this.snapshotRenderer;
 
         // Clone or use a copy for snapshot-ting to avoid disturbing main scene
-        // For simplicity and performance, we'll temporarily move the object or its clone
         const previewObj = object.clone();
         
         // Reset position for standard view
@@ -547,9 +573,14 @@ export const App = {
 
         scene.add(previewObj);
         
-        // Adjust camera to look at the object
-        camera.position.set(4, 3, 5);
-        camera.lookAt(0, 0, 0);
+        // Adjust camera based on angle
+        if (angle) {
+            camera.position.set(...angle.pos);
+            camera.lookAt(...angle.lookAt);
+        } else {
+            camera.position.set(4, 3, 5);
+            camera.lookAt(0, 0, 0);
+        }
         
         renderer.clear();
         renderer.render(scene, camera);
@@ -559,6 +590,31 @@ export const App = {
         
         return dataUrl;
     },
+
+    async captureSceneSnapshot() {
+        if (this.layers.length === 0) return JSON.stringify([]);
+        
+        const fullGroup = new THREE.Group();
+        this.layers.forEach(l => {
+            const clone = l.mesh.clone();
+            fullGroup.add(clone);
+        });
+        
+        const angles = [
+            { pos: [4, 3, 5], lookAt: [0, 0, 0] }, // 斜 45 度
+            { pos: [0, 5, 0], lookAt: [0, 0, 0] }, // 顶视图
+            { pos: [5, 0, 0], lookAt: [0, 0, 0] }  // 侧视图
+        ];
+
+        const thumbnails = [];
+        for (const angle of angles) {
+            thumbnails.push(await this.captureModelSnapshot(fullGroup, angle));
+        }
+        
+        return JSON.stringify(thumbnails);
+    },
+
+
 
     async exportModel(format) {
         if (this.layers.length === 0) return;
@@ -571,7 +627,7 @@ export const App = {
 
         if (format === 'bambu') {
             try {
-                const { exportTo3MF } = await import('https://cdn.jsdelivr.net/npm/three-3mf-exporter/+esm');
+                const { exportTo3MF } = await import('../lib/three-3mf-exporter.js');
                 const blob = await exportTo3MF(exportGroup);
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');

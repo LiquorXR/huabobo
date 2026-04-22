@@ -28,7 +28,9 @@
 - `public/js/core/`：系统的“大脑”，负责 3D 场景的生命周期。
 - `public/js/modules/`：功能插件化，包含手势追踪、AI 通信、蒸制仿真等核心逻辑。
 - `public/lib/`：为了确保在展览等弱网环境下运行，所有核心依赖（MediaPipe/Three.js）均已实现本地化托管。
-- `scripts/`：包含构建期的资产扫描工具。
+- `scripts/`：包含构建期的资产扫描工具与本地 HTTPS 证书生成脚本。
+- `database/`：存放 SQLite 数据库文件。
+- `scratch/`：存放临时调试脚本与开发草稿，不在版本控制内。
 
 ---
 
@@ -39,9 +41,10 @@
 2. 安装依赖：`npm install`
 
 ### 开发指令
-- `npm run dev`：启动开发服务器（包含自动构建资产清单）。
-- `npm run build`：扫描模型文件夹并生成 `manifest.json`。
-- `npm run start`：生产环境运行。
+- `npm run dev`：使用 nodemon 启动开发服务器。
+- `npm run build`：扫描模型文件夹并生成 `manifest.json`，自动注册新增的 3D 模型。
+- `node scripts/setup-https.js`：生成本地自签名证书（如需测试 HTTPS 访问，且 `.env` 中 `USE_HTTPS=true`）。
+- `npm start`：生产环境运行。
 
 ---
 

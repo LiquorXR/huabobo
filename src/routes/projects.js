@@ -1,15 +1,17 @@
 const express = require('express');
-const { Project } = require('../models');
+const { Project, Like } = require('../models');
 const { authMiddleware } = require('./auth');
 const router = express.Router();
 
 // Get current user's projects
 router.get('/', authMiddleware, async (req, res) => {
     try {
+        console.log('[DEBUG] GET /api/projects for user:', req.user.userId);
         const projects = await Project.findAll({
             where: { userId: req.user.userId },
             order: [['updatedAt', 'DESC']]
         });
+        console.log('[DEBUG] Found projects:', projects.length);
         res.json(projects);
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -50,8 +52,17 @@ router.post('/', authMiddleware, async (req, res) => {
 
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
-        const result = await Project.destroy({ where: { id: req.params.id, userId: req.user.userId } });
-        if (result === 0) return res.status(404).json({ error: "Project not found or unauthorized" });
+        const projectId = req.params.id;
+        // Verify ownership first
+        const project = await Project.findOne({ where: { id: projectId, userId: req.user.userId } });
+        if (!project) return res.status(404).json({ error: "Project not found or unauthorized" });
+
+        // Manually cleanup associated likes
+        await Like.destroy({ where: { projectId: projectId } });
+        
+        // Delete the project
+        await project.destroy();
+        
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });

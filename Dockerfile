@@ -7,7 +7,8 @@ WORKDIR /app
 # 复制 package.json 和 package-lock.json
 COPY package*.json ./
 
-# 安装仅生产环境所需的依赖项
+# 安装编译原生模块所需的依赖 (如 bcrypt)
+RUN apk add --no-cache python3 make g++
 RUN npm ci --only=production
 
 # 复制其它项目文件和文件夹

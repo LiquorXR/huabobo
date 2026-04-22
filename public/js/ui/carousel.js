@@ -6,29 +6,54 @@ export const Carousel = {
     timer: null,
     interval: 5000,
 
-    init() {
+    async init() {
         this.container = document.getElementById('carousel-slides');
         if (!this.container) return;
 
-        // 自动识别幻灯片数量
-        this.totalSlides = this.container.children.length;
-        
-        // 自动生成导航小圆点
-        const indicatorContainer = document.getElementById('carousel-indicators');
-        if (indicatorContainer) {
-            indicatorContainer.innerHTML = ''; // 清空原有内容
-            this.indicators = [];
-            for (let i = 0; i < this.totalSlides; i++) {
-                const dot = document.createElement('div');
-                dot.className = 'w-1.5 h-1.5 rounded-full bg-white/40 transition-all cursor-pointer';
-                if (i === 0) dot.classList.add('active-dot');
-                dot.onclick = () => this.goTo(i); // 支持点击跳转
-                indicatorContainer.appendChild(dot);
-                this.indicators.push(dot);
+        // Fetch images from API
+        try {
+            const res = await fetch('/api/resources/carousel');
+            const images = await res.json();
+            
+            if (images.length > 0) {
+                // Clear existing static images
+                this.container.innerHTML = '';
+                
+                // Add new images from DB
+                images.forEach(img => {
+                    const slide = document.createElement('div');
+                    slide.className = 'w-full h-full shrink-0';
+                    slide.innerHTML = `<img src="/api/resources/carousel/${img.id}" class="w-full h-full object-cover">`;
+                    this.container.appendChild(slide);
+                });
+
+                this.totalSlides = images.length;
+                
+                // Generate indicators
+                const indicatorContainer = document.getElementById('carousel-indicators');
+                if (indicatorContainer) {
+                    indicatorContainer.innerHTML = '';
+                    this.indicators = [];
+                    for (let i = 0; i < this.totalSlides; i++) {
+                        const dot = document.createElement('div');
+                        dot.className = 'w-1.5 h-1.5 rounded-full bg-white/40 transition-all cursor-pointer';
+                        if (i === 0) dot.classList.add('active-dot');
+                        dot.onclick = () => this.goTo(i);
+                        indicatorContainer.appendChild(dot);
+                        this.indicators.push(dot);
+                    }
+                }
+            } else {
+                // Fallback or keep static if no images in DB yet
+                this.totalSlides = this.container.children.length;
             }
+        } catch (e) {
+            console.error("Failed to load carousel images:", e);
+            this.totalSlides = this.container.children.length;
         }
 
         this.startAutoPlay();
+
         
         // Pause on hover
         const mainContainer = document.getElementById('image-carousel');
