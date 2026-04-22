@@ -77,7 +77,7 @@
 
 4. **一键启动**：
    ```bash
-   docker-compose up -d --build
+   docker compose up -d --build
    ```
    *说明：Docker 会自动构建包含所有资源的镜像，同时拉取 PostgreSQL 并完成网络打通。*
 
