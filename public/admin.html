@@ -28,9 +28,6 @@
             <button onclick="switchTab('resources')" id="nav-resources" class="w-full flex items-center gap-3 hover:bg-slate-800 px-4 py-3 rounded-xl transition text-slate-300"><i data-lucide="folder-tree"></i> 资源管理</button>
 
         </nav>
-        <div class="p-4 border-t border-slate-800">
-            <button onclick="goBackHome()" class="w-full flex justify-center py-2 text-slate-400 hover:text-white transition-colors"><i data-lucide="arrow-left" class="mr-2"></i> 返回首页</button>
-        </div>
     </aside>
 
     <!-- Main -->
@@ -185,8 +182,9 @@
                     </div>
                     <div class="flex gap-4 mt-8">
                         <button type="button" onclick="closeUploadModal()" class="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">取消</button>
-                        <button type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">开始上传</button>
+                        <button id="upload-submit-btn" type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">开始上传</button>
                     </div>
+                    <div id="upload-status" class="hidden rounded-2xl bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700"></div>
                 </form>
             </div>
         </div>
@@ -222,11 +220,8 @@
         window.location.href = '/';
     }
 
-    function goBackHome() {
-        window.location.href = '/';
-    }
-
     let trendChart = null;
+    let isUploading = false;
 
     function switchTab(tab) {
         // Hide all views
@@ -329,16 +324,51 @@
         
         // Clear previous preview
         document.getElementById('upload-preview-container').innerHTML = '<span class="text-xs text-slate-400">等待选择文件...</span>';
+        setUploadState(false);
         currentGeneratedThumbnail = null;
     }
 
     function closeUploadModal() {
+        if (isUploading) return;
         document.getElementById('upload-modal').classList.add('hidden');
         document.getElementById('upload-form').reset();
         currentGeneratedThumbnail = null;
+        setUploadState(false);
     }
 
     let currentGeneratedThumbnail = null;
+
+    function setUploadState(uploading, message = '') {
+        isUploading = uploading;
+        const submitBtn = document.getElementById('upload-submit-btn');
+        const status = document.getElementById('upload-status');
+        const fileInput = document.getElementById('resource-file');
+        const cancelBtn = document.querySelector('#upload-form button[type="button"]');
+
+        if (submitBtn) {
+            submitBtn.disabled = uploading;
+            submitBtn.innerText = uploading ? '上传中...' : '开始上传';
+            submitBtn.classList.toggle('opacity-70', uploading);
+            submitBtn.classList.toggle('cursor-not-allowed', uploading);
+        }
+
+        if (fileInput) fileInput.disabled = uploading;
+        if (cancelBtn) {
+            cancelBtn.disabled = uploading;
+            cancelBtn.classList.toggle('opacity-60', uploading);
+            cancelBtn.classList.toggle('cursor-not-allowed', uploading);
+        }
+
+        if (status) {
+            if (message) {
+                status.classList.remove('hidden');
+                status.innerText = message;
+            } else {
+                status.classList.add('hidden');
+                status.innerText = '';
+            }
+        }
+    }
 
 
     // Listen for file selection to generate preview
@@ -404,6 +434,7 @@
 
     async function handleUpload(e) {
         e.preventDefault();
+        if (isUploading) return;
         const type = document.getElementById('upload-type').value;
         const fileInput = document.getElementById('resource-file');
         if (!fileInput.files[0]) return;
@@ -421,20 +452,28 @@
 
 
         try {
+            setUploadState(true, type === 'models' ? '正在上传模型并保存预览，请稍候...' : '正在上传轮播图，请稍候...');
             const res = await fetch(`/api/admin/resources/${type}`, {
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + token },
                 body: formData
             });
             if (res.ok) {
+                setUploadState(false);
                 closeUploadModal();
                 if (type === 'models') loadModels();
                 else loadCarousel();
+                alert('上传完成');
             } else {
                 const data = await res.json();
+                setUploadState(false);
                 alert(data.error || "上传失败");
             }
-        } catch(e) { console.error(e); }
+        } catch(e) {
+            setUploadState(false);
+            console.error(e);
+            alert('上传失败，请稍后重试');
+        }
     }
 
     async function deleteResource(type, id) {

@@ -38,47 +38,20 @@ export const UI = {
         }
     },
 
-    popLoginCard() {
-        const card = document.getElementById('entry-login-card');
-        const hint = document.getElementById('entry-guide-hint');
-        if (card) card.classList.add('active');
-        if (hint) {
-            hint.style.opacity = '0';
-            hint.style.pointerEvents = 'none';
-        }
-    },
+    popLoginCard() {},
 
-    dismissLoginCard(event) {
-        const card = document.getElementById('entry-login-card');
-        const hint = document.getElementById('entry-guide-hint');
-        
-        // 只有当点击的是背景遮罩层本身 (event.target === event.currentTarget)
-        // 且卡片当前处于激活状态时，才执行隐藏
-        if (event.target === event.currentTarget && card && card.classList.contains('active')) {
-            card.classList.remove('active');
-            if (hint) {
-                hint.style.opacity = '1';
-                hint.style.pointerEvents = 'auto';
-            }
-        }
-    },
+    dismissLoginCard() {},
 
     showEntryLogin() {
         const overlay = document.getElementById('entry-login-overlay');
         if (!overlay) return;
         
-        // Reset states
         const card = document.getElementById('entry-login-card');
-        const hint = document.getElementById('entry-guide-hint');
         if (card) card.classList.remove('active');
-        if (hint) {
-            hint.style.opacity = '1';
-            hint.style.pointerEvents = 'auto';
-        }
         
         // 响应式背景逻辑：移动端使用 2.png，桌面端使用 1.png
         const isMobile = window.innerWidth < 768;
-        const photoName = isMobile ? '2.png' : '1.png';
+        const photoName = isMobile ? '2.png' : '1.jpg';
         const randomPhoto = `backgrounds/${photoName}`;
         
         overlay.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('${randomPhoto}')`;
@@ -88,6 +61,7 @@ export const UI = {
         overlay.classList.remove('hidden');
         setTimeout(() => {
             overlay.classList.add('opacity-100');
+            if (card) card.classList.add('active');
             if (window.lucide) window.lucide.createIcons();
         }, 10);
     },
@@ -95,7 +69,9 @@ export const UI = {
 
     hideEntryLogin() {
         const overlay = document.getElementById('entry-login-overlay');
+        const card = document.getElementById('entry-login-card');
         if (!overlay) return;
+        if (card) card.classList.remove('active');
         overlay.classList.remove('opacity-100');
         setTimeout(() => {
             overlay.classList.add('hidden');
@@ -355,13 +331,13 @@ export const UI = {
                     <!-- Image Container with Arrows -->
                     <div class="relative w-full h-40 bg-[#f8fafc] flex items-center justify-center overflow-hidden">
                         ${thumbs.length > 0 ? `
-                            <img id="thumb-img-${p.id}" src="${thumbs[0]}" data-index="0" data-thumbs='${JSON.stringify(thumbs)}' class="w-full h-full object-contain transition-all duration-500">
+                            <img id="project-thumb-img-${p.id}" src="${thumbs[0]}" data-index="0" data-thumbs='${JSON.stringify(thumbs.filter(Boolean))}' class="w-full h-full object-contain transition-all duration-500">
                             ${thumbs.length > 1 ? `
                                 <!-- Arrows -->
-                                <button onclick="UI.prevThumbnail('${p.id}', event)" class="absolute left-1.5 top-1/2 -translate-y-1/2 w-5 h-5 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm z-20">
+                                <button onclick="UI.prevThumbnail('${p.id}', event, 'project')" class="absolute left-1.5 top-1/2 -translate-y-1/2 w-5 h-5 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm z-20">
                                     <i data-lucide="chevron-left" size="8"></i>
                                 </button>
-                                <button onclick="UI.nextThumbnail('${p.id}', event)" class="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm z-20">
+                                <button onclick="UI.nextThumbnail('${p.id}', event, 'project')" class="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm z-20">
                                     <i data-lucide="chevron-right" size="8"></i>
                                 </button>
                                 <!-- Indicators -->
@@ -417,16 +393,18 @@ export const UI = {
         }
     },
 
-    switchThumbnail(projectId, src, index, event) {
+    switchThumbnail(projectId, src, index, event, scope = 'project') {
         if (event) event.stopPropagation();
-        const img = document.getElementById(`thumb-img-${projectId}`);
+        const prefix = scope === 'community' ? 'community-thumb-img' : 'project-thumb-img';
+        const cardPrefix = scope === 'community' ? 'community-card' : 'project-card';
+        const img = document.getElementById(`${prefix}-${projectId}`);
         if (img) {
             img.src = src;
             img.dataset.index = index;
         }
 
         // Update dots
-        const card = document.getElementById(`project-card-${projectId}`) || document.getElementById(`community-card-${projectId}`);
+        const card = document.getElementById(`${cardPrefix}-${projectId}`);
         if (card) {
             const dots = card.querySelectorAll('.thumb-dot');
             dots.forEach((dot, i) => {
@@ -441,24 +419,28 @@ export const UI = {
         }
     },
 
-    nextThumbnail(projectId, event) {
+    nextThumbnail(projectId, event, scope = 'project') {
         if (event) event.stopPropagation();
-        const img = document.getElementById(`thumb-img-${projectId}`);
+        const prefix = scope === 'community' ? 'community-thumb-img' : 'project-thumb-img';
+        const img = document.getElementById(`${prefix}-${projectId}`);
         if (!img || !img.dataset.thumbs) return;
-        const thumbs = JSON.parse(img.dataset.thumbs);
+        const thumbs = JSON.parse(img.dataset.thumbs).filter(Boolean);
+        if (thumbs.length === 0) return;
         let idx = parseInt(img.dataset.index || 0);
         idx = (idx + 1) % thumbs.length;
-        this.switchThumbnail(projectId, thumbs[idx], idx);
+        this.switchThumbnail(projectId, thumbs[idx], idx, event, scope);
     },
 
-    prevThumbnail(projectId, event) {
+    prevThumbnail(projectId, event, scope = 'project') {
         if (event) event.stopPropagation();
-        const img = document.getElementById(`thumb-img-${projectId}`);
+        const prefix = scope === 'community' ? 'community-thumb-img' : 'project-thumb-img';
+        const img = document.getElementById(`${prefix}-${projectId}`);
         if (!img || !img.dataset.thumbs) return;
-        const thumbs = JSON.parse(img.dataset.thumbs);
+        const thumbs = JSON.parse(img.dataset.thumbs).filter(Boolean);
+        if (thumbs.length === 0) return;
         let idx = parseInt(img.dataset.index || 0);
         idx = (idx - 1 + thumbs.length) % thumbs.length;
-        this.switchThumbnail(projectId, thumbs[idx], idx);
+        this.switchThumbnail(projectId, thumbs[idx], idx, event, scope);
     },
 
     toggleProjectMenu(projectId, event) {
@@ -487,12 +469,12 @@ export const UI = {
     handleTouchStart(e) {
         this.touchStartX = e.touches[0].clientX;
     },
-    handleTouchEnd(e, projectId) {
+    handleTouchEnd(e, projectId, scope = 'project') {
         const touchEndX = e.changedTouches[0].clientX;
         const diff = touchEndX - this.touchStartX;
         if (Math.abs(diff) > 50) { // Threshold
-            if (diff > 0) this.prevThumbnail(projectId);
-            else this.nextThumbnail(projectId);
+            if (diff > 0) this.prevThumbnail(projectId, null, scope);
+            else this.nextThumbnail(projectId, null, scope);
         }
     },
 
@@ -541,10 +523,22 @@ export const UI = {
     },
 
     logout() {
+        const authModal = document.getElementById('auth-modal');
+        const authOverlay = document.getElementById('auth-modal-overlay');
+        const communityModal = document.getElementById('community-modal');
+        const exportDropdown = document.getElementById('export-dropdown');
         if (window.API) window.API.clearToken();
         if (this.app) this.app._activeProjectId = null;
+        if (authModal) authModal.classList.add('translate-x-full');
+        if (authOverlay) {
+            authOverlay.classList.add('opacity-0');
+            setTimeout(() => authOverlay.classList.add('hidden'), 300);
+        }
+        if (communityModal) communityModal.classList.add('translate-y-full');
+        if (exportDropdown) exportDropdown.classList.remove('show');
         this.renderAuthContent();
         this.updateNavAccount();
+        this.showEntryLogin();
     },
 
     async saveCurrentProjectAsNew() {
@@ -642,15 +636,15 @@ export const UI = {
                 <div class="waterfall-item group" id="community-card-${p.id}">
                     <div class="relative w-full overflow-hidden touch-pan-y" 
                          ontouchstart="UI.handleTouchStart(event)" 
-                         ontouchend="UI.handleTouchEnd(event, '${p.id}')">
+                         ontouchend="UI.handleTouchEnd(event, '${p.id}', 'community')">
                         ${thumbs.length > 0 ? `
-                            <img id="thumb-img-${p.id}" src="${thumbs[0]}" data-index="0" data-thumbs='${JSON.stringify(thumbs)}' class="waterfall-img transition-all duration-500">
+                            <img id="community-thumb-img-${p.id}" src="${thumbs[0]}" data-index="0" data-thumbs='${JSON.stringify(thumbs.filter(Boolean))}' class="waterfall-img transition-all duration-500">
                             ${thumbs.length > 1 ? `
                                 <!-- Arrows (Desktop) -->
-                                <button onclick="UI.prevThumbnail('${p.id}', event)" class="absolute left-2 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-lg z-20">
+                                <button onclick="UI.prevThumbnail('${p.id}', event, 'community')" class="absolute left-2 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-lg z-20">
                                     <i data-lucide="chevron-left" size="12" class="text-slate-800"></i>
                                 </button>
-                                <button onclick="UI.nextThumbnail('${p.id}', event)" class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-lg z-20">
+                                <button onclick="UI.nextThumbnail('${p.id}', event, 'community')" class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-lg z-20">
                                     <i data-lucide="chevron-right" size="12" class="text-slate-800"></i>
                                 </button>
 

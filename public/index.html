@@ -420,17 +420,8 @@
     </script>
 
     <!-- Entry Login Overlay -->
-    <div id="entry-login-overlay" class="fixed inset-0 flex items-center justify-center hidden opacity-0 transition-all duration-1000 z-[1000]" onclick="UI.dismissLoginCard(event)">
-        <!-- Initial Entry Hint (Bottom) -->
-        <div id="entry-guide-hint" class="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 cursor-pointer group transition-all duration-500 hover:-translate-y-2" onclick="UI.popLoginCard()">
-            <span class="text-white text-[10px] font-black tracking-[0.4em] uppercase opacity-60 group-hover:opacity-100 transition-opacity">点击开启艺术之旅</span>
-            <div class="w-10 h-10 rounded-full border border-white/30 flex items-center justify-center text-white backdrop-blur-md bg-white/10 group-hover:bg-white/20 transition-all shadow-2xl">
-                <i data-lucide="chevron-up" class="animate-bounce-slow" size="20"></i>
-            </div>
-        </div>
-
-        <!-- Login Card (Hidden by default) -->
-        <div id="entry-login-card" class="login-card w-[85vw] max-w-[280px] rounded-[2rem] py-4 px-6 sm:py-6 sm:px-8 flex flex-col gap-4 scale-90 opacity-0 translate-y-8 transition-all duration-700 pointer-events-none">
+    <div id="entry-login-overlay" class="fixed inset-0 flex items-center justify-center hidden opacity-0 transition-all duration-1000 z-[1000]">
+        <div id="entry-login-card" class="login-card w-[88vw] max-w-[360px] rounded-[2rem] py-5 px-6 sm:py-7 sm:px-8 flex flex-col gap-4 scale-90 opacity-0 translate-y-8 transition-all duration-700 pointer-events-none">
             <div class="flex justify-center border-b border-slate-100">
                 <button onclick="UI.setEntryTab('login')" id="tab-login" class="login-tab active py-2 text-xs">登录账号</button>
                 <button onclick="UI.setEntryTab('register')" id="tab-register" class="login-tab py-2 text-xs">注册新禧</button>
@@ -447,7 +438,6 @@
                 </div>
                 <div class="pt-2">
                     <button onclick="UI.submitEntryAuth()" id="entry-submit-btn" class="auth-btn py-3 text-sm">开启艺术之旅</button>
-                    <button onclick="UI.hideEntryLogin()" class="w-full mt-3 py-1 text-black text-[10px] font-bold hover:opacity-70 transition-colors tracking-widest uppercase">跳过登录</button>
                 </div>
             </div>
         </div>
