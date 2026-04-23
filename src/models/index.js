@@ -14,7 +14,6 @@ const Project = sequelize.define('Project', {
     thumbnail: { type: DataTypes.TEXT }, // Base64 or URL
     scene_data: { type: DataTypes.TEXT }, // JSON stringified data
     is_public: { type: DataTypes.BOOLEAN, defaultValue: false },
-    views: { type: DataTypes.INTEGER, defaultValue: 0 },
     userId: { type: DataTypes.UUID, allowNull: true } // Explicitly defined foreign key
 });
 

@@ -44,7 +44,7 @@ export const Carousel = {
                     }
                 }
             } else {
-                // Fallback or keep static if no images in DB yet
+                // Keep the safe placeholder slide when no images are configured yet.
                 this.totalSlides = this.container.children.length;
             }
         } catch (e) {

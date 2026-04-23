@@ -33,23 +33,4 @@ if (dialect === 'postgres') {
   });
 }
 
-const testConnection = async (retries = 5) => {
-    while (retries > 0) {
-        try {
-            await sequelize.authenticate();
-            console.log(`[DB] Connection (${dialect}) has been established successfully.`);
-            return;
-        } catch (error) {
-            retries--;
-            console.error(`[DB] Connection failed. Retries left: ${retries}. Error:`, error.message);
-            if (retries === 0) {
-                console.error("[DB] Max retries reached. Exiting.");
-                process.exit(1);
-            }
-            // Wait 5 seconds before retrying
-            await new Promise(res => setTimeout(res, 5000));
-        }
-    }
-};
-
-module.exports = { sequelize, testConnection, dialect };
+module.exports = { sequelize, dialect };

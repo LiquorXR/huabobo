@@ -70,7 +70,7 @@
 
 /* Entry Login Overlay */
 #entry-login-overlay {
-    background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url('../backgrounds/1.png') center/cover no-repeat;
+    background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url('../backgrounds/1.jpg') center/cover no-repeat;
     z-index: 1000;
     transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }

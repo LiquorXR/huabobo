@@ -2,6 +2,7 @@ import { API } from '../api/client.js';
 
 export const UI = {
     app: null,
+    currentView: 'diy',
     
     init(appInstance) {
         this.app = appInstance;
@@ -22,12 +23,22 @@ export const UI = {
         
         // Initial nav update
         this.updateNavAccount();
+        this.renderCommunityHome();
+
+        if (window.API && window.API.getToken()) {
+            this.showCommunityHome(false);
+        }
     },
 
     updateNavAccount() {
         const user = window.API ? window.API.getUser() : null;
         const textSpan = document.getElementById('nav-account-text');
         const btn = document.getElementById('nav-account-btn');
+        const communityButtonLabel = document.getElementById('community-nav-label');
+        const exportMenu = document.getElementById('export-menu-container');
+        const communityBtn = document.getElementById('community-nav-btn');
+        const topHeader = document.getElementById('top-header');
+        const studioAtmosphere = document.getElementById('studio-atmosphere');
         if (textSpan) {
             textSpan.innerText = user ? (user.role === 'admin' ? '管理员' : user.username) : '登录';
             if (user && user.role === 'admin' && btn) {
@@ -36,11 +47,36 @@ export const UI = {
                 btn.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
             }
         }
+
+        if (communityButtonLabel) {
+            communityButtonLabel.innerText = this.currentView === 'community' ? '返回DIY' : '灵感社区';
+        }
+
+        if (exportMenu) {
+            exportMenu.classList.toggle('hidden', this.currentView === 'community');
+        }
+
+        if (communityBtn) {
+            communityBtn.classList.toggle('bg-rose-500', this.currentView === 'community');
+            communityBtn.classList.toggle('text-white', this.currentView === 'community');
+            communityBtn.classList.toggle('border-rose-400', this.currentView === 'community');
+            communityBtn.classList.toggle('shadow-rose-500/20', this.currentView === 'community');
+            communityBtn.classList.toggle('bg-white/70', this.currentView !== 'community');
+            communityBtn.classList.toggle('text-rose-500', this.currentView !== 'community');
+            communityBtn.classList.toggle('border-white/50', this.currentView !== 'community');
+        }
+
+        if (topHeader) {
+            topHeader.classList.toggle('opacity-95', this.currentView === 'community');
+            topHeader.classList.toggle('translate-y-1', this.currentView === 'community');
+        }
+
+        if (studioAtmosphere) {
+            studioAtmosphere.style.opacity = this.currentView === 'community' ? '0.35' : '1';
+        }
+
+        this.renderCommunityHomeProfile();
     },
-
-    popLoginCard() {},
-
-    dismissLoginCard() {},
 
     showEntryLogin() {
         const overlay = document.getElementById('entry-login-overlay');
@@ -109,6 +145,8 @@ export const UI = {
             }
             this.hideEntryLogin();
             this.updateNavAccount();
+            this.renderAuthContent();
+            this.showCommunityHome();
         } catch(e) {
             alert((this._entryTab === 'login' ? "登录" : "注册") + "失败：" + e.message);
         }
@@ -251,39 +289,26 @@ export const UI = {
         const user = window.API ? window.API.getUser() : null;
 
         if (user) {
-            title.innerText = '个人中心';
+            title.innerText = '创作管理';
             container.innerHTML = `
-                ${user.role === 'admin' ? `
-                <div class="mb-6 p-4 bg-slate-900 text-white rounded-2xl flex flex-col gap-3 shadow-xl">
-                    <div class="flex items-center gap-2 text-amber-400">
-                        <i data-lucide="shield-check" size="20"></i>
-                        <span class="font-black text-sm uppercase tracking-widest">系统管理员</span>
-                    </div>
-                    <a href="/admin.html" class="w-full py-2 bg-amber-500 text-center text-amber-950 rounded-xl font-bold text-sm hover:bg-amber-400 transition-all">进入管理后台</a>
-                </div>
-                ` : ''}
-
-                <!-- User Info Profile -->
-                <div class="mb-6 p-5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-lg uppercase">
-                            ${user.username.substring(0,1)}
-                        </div>
+                <div class="mb-6 p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">Workspace</p>
+                    <div class="flex items-center justify-between gap-3">
                         <div>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">我的艺名</p>
-                            <h4 class="font-black text-slate-800 text-lg">${user.username}</h4>
+                            <h3 class="text-xl font-black text-slate-900">${user.username}</h3>
+                            <p class="text-sm text-slate-500 mt-1">在这里管理当前创作、存档和发布状态。</p>
                         </div>
+                        <button onclick="UI.changeUsername()" class="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all shrink-0">
+                            <i data-lucide="edit-3" size="18"></i>
+                        </button>
                     </div>
-                    <button onclick="UI.changeUsername()" class="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all">
-                        <i data-lucide="edit-3" size="18"></i>
-                    </button>
                 </div>
 
-                <div class=\"flex gap-4 mb-6\">
+                <div class="flex gap-4 mb-6">
                     <button onclick="UI.saveCurrentProjectAsNew()" class="flex-1 bg-amber-100 text-amber-700 py-3 rounded-xl font-bold hover:bg-amber-200 transition-colors">存为新作品</button>
                     ${this.app && this.app._activeProjectId ? `<button onclick="UI.updateCurrentProject()" class="flex-1 bg-emerald-100 text-emerald-700 py-3 rounded-xl font-bold hover:bg-emerald-200 transition-colors">更新保存</button>` : ''}
                 </div>
-                
+
                 <h3 class="font-bold text-slate-500 text-sm mb-4">云端存档</h3>
                 <div id="user-projects-list" class="space-y-4">
                     <div class="text-center text-slate-400 py-4 text-sm animate-pulse">加载中...</div>
@@ -292,7 +317,7 @@ export const UI = {
             `;
             this.loadUserProjects();
         } else {
-            title.innerText = '欢迎回来';
+            title.innerText = '账号登录';
             container.innerHTML = `
                 <div class="space-y-4 mt-4">
                     <div>
@@ -313,11 +338,21 @@ export const UI = {
     },
 
     async loadUserProjects() {
-        const list = document.getElementById('user-projects-list');
-        if (!list) return;
+        const lists = [
+            document.getElementById('user-projects-list'),
+            document.getElementById('community-user-projects-list')
+        ].filter(Boolean);
+        if (lists.length === 0) return;
+
+        const setListsContent = (html) => {
+            lists.forEach(list => {
+                list.innerHTML = html;
+            });
+        };
+
         try {
             const projects = await window.API.getMyProjects();
-            list.innerHTML = projects.map(p => {
+            const html = projects.map(p => {
                 let thumbs = [];
                 try {
                     thumbs = JSON.parse(p.thumbnail);
@@ -380,8 +415,10 @@ export const UI = {
                 `;
             }).join('');
 
+            setListsContent(html);
+
             if (projects.length === 0) {
-                list.innerHTML = '<div class="text-center text-slate-400 py-10 text-xs font-medium">还没有保存过作品，快去开启第一屉吧！</div>';
+                setListsContent('<div class="text-center text-slate-400 py-10 text-xs font-medium">还没有保存过作品，快去开启第一屉吧！</div>');
             }
 
             if (window.lucide) window.lucide.createIcons();
@@ -389,7 +426,7 @@ export const UI = {
 
 
         } catch (e) {
-            list.innerHTML = '<div class="text-center text-red-400 py-6 text-sm">加载失败</div>';
+            setListsContent('<div class="text-center text-red-400 py-6 text-sm">加载失败</div>');
         }
     },
 
@@ -478,6 +515,103 @@ export const UI = {
         }
     },
 
+    getUserProfileCardMarkup(user) {
+        if (!user) {
+            return `
+                <section class="bg-white/90 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl p-6">
+                    <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-3">Welcome</p>
+                    <h3 class="text-2xl font-black text-slate-900">请先登录</h3>
+                    <p class="text-sm text-slate-500 mt-2">登录后可查看个人资料、管理作品并进入 DIY 创作。</p>
+                </section>
+            `;
+        }
+
+        return `
+            <section class="bg-white/90 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl overflow-hidden">
+                ${user.role === 'admin' ? `
+                <div class="mx-5 mt-5 mb-0 p-4 bg-slate-900 text-white rounded-2xl flex flex-col gap-3 shadow-xl">
+                    <div class="flex items-center gap-2 text-amber-400">
+                        <i data-lucide="shield-check" size="18"></i>
+                        <span class="font-black text-sm uppercase tracking-widest">系统管理员</span>
+                    </div>
+                    <a href="/admin.html" class="w-full py-2 bg-amber-500 text-center text-amber-950 rounded-xl font-bold text-sm hover:bg-amber-400 transition-all">进入管理后台</a>
+                </div>
+                ` : ''}
+                <div class="p-5 lg:p-6 border-b border-slate-100">
+                    <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4">Profile</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-2xl shadow-lg uppercase shrink-0">
+                            ${user.username.substring(0,1)}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">我的艺名</p>
+                            <h4 class="font-black text-slate-800 text-xl truncate">${user.username}</h4>
+                        </div>
+                        <button onclick="UI.changeUsername()" class="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all shrink-0">
+                            <i data-lucide="edit-3" size="18"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-5 lg:p-6 flex flex-col gap-3">
+                    <button onclick="UI.showDIYView()" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl font-black text-sm tracking-widest shadow-lg shadow-orange-500/20 hover:opacity-95 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="wand-sparkles" size="18"></i>
+                        进入DIY体验
+                    </button>
+                    <button onclick="UI.logout()" class="w-full py-3 text-red-500 font-bold bg-red-50 rounded-2xl hover:bg-red-100 transition-colors">退出登录</button>
+                </div>
+            </section>
+        `;
+    },
+
+    renderCommunityHomeProfile() {
+        const container = document.getElementById('community-home-profile');
+        if (!container) return;
+        const user = window.API ? window.API.getUser() : null;
+        container.innerHTML = this.getUserProfileCardMarkup(user);
+        if (window.lucide) window.lucide.createIcons({ root: container });
+    },
+
+    renderCommunityHome() {
+        this.renderCommunityHomeProfile();
+        if (window.API && window.API.getToken()) {
+            this.loadUserProjects();
+            this.refreshCommunity();
+        }
+    },
+
+    refreshCommunityHome() {
+        this.renderCommunityHome();
+    },
+
+    showCommunityHome(refresh = true) {
+        const modal = document.getElementById('community-modal');
+        if (!modal) return;
+        this.currentView = 'community';
+        modal.classList.remove('translate-y-full');
+        this.hideExportMenu();
+        this.updateNavAccount();
+        if (refresh) {
+            this.renderCommunityHome();
+        }
+    },
+
+    showDIYView() {
+        const modal = document.getElementById('community-modal');
+        if (!modal) return;
+        this.currentView = 'diy';
+        modal.classList.add('translate-y-full');
+        this.updateNavAccount();
+        if (window.innerWidth < 1024) {
+            const drawer = document.getElementById('mobile-drawer');
+            const overlay = document.getElementById('mobile-drawer-overlay');
+            if (drawer) drawer.classList.add('translate-y-full');
+            if (overlay) {
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+    },
+
 
 
 
@@ -490,6 +624,7 @@ export const UI = {
             await window.API.login(userStr, passStr);
             this.renderAuthContent();
             this.updateNavAccount();
+            this.showCommunityHome();
         } catch(e) { alert("登录失败：" + e.message); }
     },
 
@@ -502,6 +637,7 @@ export const UI = {
             await window.API.register(userStr, passStr);
             this.renderAuthContent();
             this.updateNavAccount();
+            this.showCommunityHome();
         } catch(e) { alert("注册失败：" + e.message); }
     },
 
@@ -515,7 +651,8 @@ export const UI = {
             await window.API.updateUsername(newName);
             this.renderAuthContent();
             this.updateNavAccount();
-            this.refreshCommunity(); // Update community author name
+            this.renderCommunityHomeProfile();
+            this.refreshCommunity();
             alert("艺名修改成功！");
         } catch(e) {
             alert("修改失败：" + e.message);
@@ -536,7 +673,9 @@ export const UI = {
         }
         if (communityModal) communityModal.classList.add('translate-y-full');
         if (exportDropdown) exportDropdown.classList.remove('show');
+        this.currentView = 'diy';
         this.renderAuthContent();
+        this.renderCommunityHomeProfile();
         this.updateNavAccount();
         this.showEntryLogin();
     },
@@ -552,6 +691,7 @@ export const UI = {
 
             this.app._activeProjectId = res.id;
             this.loadUserProjects();
+            alert("已保存为新作品！");
         } catch (e) { alert("保存失败：" + e.message); }
     },
 
@@ -589,21 +729,24 @@ export const UI = {
             const p = projects.find(x => x.id === id);
             if (p && p.scene_data && this.app) {
                 this.app._activeProjectId = p.id;
+                this.showDIYView();
                 await this.app.loadProjectState(p.scene_data);
-                this.toggleAccount(); // close panel to see result
+                const modal = document.getElementById('auth-modal');
+                const overlay = document.getElementById('auth-modal-overlay');
+                if (modal) modal.classList.add('translate-x-full');
+                if (overlay) {
+                    overlay.classList.add('opacity-0');
+                    setTimeout(() => overlay.classList.add('hidden'), 300);
+                }
             }
         } catch(e) { alert("读取失败：" + e.message); }
     },
 
     toggleCommunity() {
-        const modal = document.getElementById('community-modal');
-        if (!modal) return;
-        const isHidden = modal.classList.contains('translate-y-full');
-        if (isHidden) {
-            modal.classList.remove('translate-y-full');
-            this.refreshCommunity();
+        if (this.currentView === 'community') {
+            this.showDIYView();
         } else {
-            modal.classList.add('translate-y-full');
+            this.showCommunityHome();
         }
     },
 
@@ -685,8 +828,8 @@ export const UI = {
     async likeCommunityPost(id, btnElement) {
         if (!window.API || !window.API.getToken()) {
             alert("请先登录账号才能点赞哦");
-            this.toggleCommunity(); // fade out to let user login
-            setTimeout(() => this.toggleAccount(), 300);
+            this.showDIYView();
+            this.showEntryLogin();
             return;
         }
         try {

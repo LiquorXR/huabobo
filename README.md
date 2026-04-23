@@ -18,8 +18,8 @@
 - **配置注入**：`server.js` 在分发 `index.html` 时，动态注入服务端环境变量（如 AI 模型版本），实现前、后端配置同步。
 - **API 代理**：统一封装对 Gemini API 的调用，实现多模态（截图 + 提示词）分析，由“AI 大师”提供专业的配色与文化寓意点评。
 
-### 3. 自动化流水线
-- **资产自动化**：通过 `npm run build` 触发 `generate-manifest.js`，自动识别 `public/models/` 下的新增模型，无需手动修改代码即可扩展面团造型。
+### 3. 资源管理与扩展
+- **模型与轮播资源**：当前项目不再依赖 `public/models/` 下的静态模型清单。3D 模型与首页轮播图统一通过 Admin UI 上传，并存储在数据库中，由 `/api/resources/*` 接口分发给前端使用。
 
 ---
 
@@ -30,7 +30,6 @@
 - `public/lib/`：为了确保在展览等弱网环境下运行，所有核心依赖（MediaPipe/Three.js）均已实现本地化托管。
 - `scripts/`：包含本地 HTTPS 证书生成脚本。
 - `database/`：存放 SQLite 数据库文件。
-- `scratch/`：存放临时调试脚本与开发草稿，不在版本控制内。
 
 ---
 
@@ -49,7 +48,7 @@
 
 ## 🚢 生产环境部署 (Docker)
 
-由于本项目同时依赖 Node.js 运行时与 Sequelize 数据库，推荐使用 Docker Compose 进行容器化部署。内置的 `docker-compose.yml` 默认使用了 PostgreSQL 作为生产级数据库。
+本项目默认可直接使用 SQLite 进行本地开发；如需容器化部署，也保留了基于 Docker Compose + PostgreSQL 的部署方式。
 
 ### 部署步骤
 
@@ -70,7 +69,7 @@
      JWT_SECRET=随机生成的长字符串
      GEMINI_MODEL=gemini-3.1-flash-lite-preview
      ```
-   - **注意**：不需要在 `.env` 中配置 SQLite，`docker-compose.yml` 会自动接管环境变量以覆盖并使用 PostgreSQL。
+   - **注意**：生产部署时建议使用 `DB_DIALECT=postgres`。当前 `docker-compose.yml` 会为 `web` 服务显式注入 PostgreSQL 连接参数。
 
 3. **安全配置 (可选但建议)**：
    如果你希望使用自定义的数据库密码，请在 `docker-compose.yml` 文件中同步修改 `db` 容器的 `POSTGRES_PASSWORD` 以及 `web` 容器环境变量中的 `DB_PASS`。
@@ -84,6 +83,11 @@
 5. **验证部署**：
    - 在浏览器中访问：`http://服务器IP:3179`。
    - 服务启动时，Sequelize 会由于配置了 `{ alter: true }` 自动把 PostgreSQL 的数据表结构同步完毕，并可以直接登录 Admin UI 添加资源。
+
+### VPS 部署建议
+- 建议只暴露 `web` 服务端口，不要把 PostgreSQL 的 `5432` 直接映射到公网。
+- 建议在 VPS 上使用 Nginx/Caddy 反代 `3179`，并由反向代理统一处理 HTTPS。
+- 容器内与宿主机统一监听 `3179`，便于环境一致性和排障。
 
 ### 停止与数据持久化
 - 停止服务：`docker-compose down`

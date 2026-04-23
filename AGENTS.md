@@ -1,19 +1,23 @@
 # Agent Guide: Hua Bobo DIY System
 
 ## 🛠 Critical Commands
-- `npm run dev`: Starts the development server using nodemon (`nodemon server.js`). This is the primary command for local development.
-- `node scripts/setup-https.js`: Required to generate local certificates if `USE_HTTPS=true` is set in the `.env` file. Do this before attempting to start the server in HTTPS mode.
+- `npm run dev`: Starts the development server using nodemon (`nodemon server.js`). Primary command for local development.
+- `node scripts/setup-https.js`: Required to generate local certificates if `USE_HTTPS=true` is set in `.env`. Do this before starting the server in HTTPS mode.
 
 ## 🏗 Architecture Context
-- **Config Injection**: `server.js` dynamically injects `window.ENV_CONFIG` into `public/index.html` on every request by replacing the `</head>` tag. **Never** remove the `</head>` tag from `index.html`.
-- **API Proxy**: All Gemini API calls from the frontend must go through the proxy at `POST /api/ask-master`. The client never calls Gemini directly.
-- **Database**: The system uses Sequelize with `{ alter: true }` which automatically synchronizes the database schema on server startup. The default database is `database/dev.sqlite`.
-- **Local Libs**: Core libraries like Three.js and MediaPipe are vendored locally in `public/lib/`. Avoid adding external CDN links to ensure the app works in offline/weak-network exhibition environments.
-- **3D & Gesture Logic**:
-  - `public/js/core/app.js`: Handles 3D scene initialization and state management.
-  - `public/js/modules/hand-tracker.js`: Maps MediaPipe gestures to 3D controls, utilizing Exponential Moving Average (EMA) for smoothing.
+- **Config Injection**: `server.js` dynamically injects `window.ENV_CONFIG` into `public/index.html` by replacing the `</head>` tag. **Never** remove the `</head>` tag from `index.html`.
+- **API Proxy**: All Gemini API calls must go through `POST /api/ask-master`. The client never calls Gemini directly. Enforced `maxOutputTokens: 100`.
+- **Database**: Sequelize with `{ alter: true }` syncs schema on startup.
+  - SQLite: Default, `database/dev.sqlite`. Contains logic to dedupe users and drop backup tables during sync.
+  - PostgreSQL: Supported via `DB_DIALECT=postgres` (used in Docker).
+- **Admin Bootstrap**: The first user registered via `/api/auth/register` is automatically granted the `admin` role.
+- **Local Libs**: Core libraries (Three.js, MediaPipe) are vendored in `public/lib/`. Avoid external CDN links to ensure offline/exhibition reliability.
+- **Resources**: 3D models and carousel images are stored as `BLOB` in the database (`ModelResource`, `CarouselImage` tables) and managed via Admin UI.
 
 ## 🤖 Operation & Constraints
-- **Resource Management**: 3D models and carousel images are managed via the Admin UI and their metadata is stored in the database.
-- **AI Constraints**: The server rate-limits the Gemini API proxy to 100 requests per 15 minutes per IP. The proxy also enforces a `maxOutputTokens` limit of 100.
-- **Environment Requirements**: Ensure `.env` is configured. `GEMINI_API_KEY` is required. If `JWT_SECRET` is missing or default, `server.js` will automatically generate and inject a new one on startup.
+- **Environment**: `.env` is required. `GEMINI_API_KEY` is mandatory.
+- **Security**: `server.js` auto-generates `JWT_SECRET` and writes it to `.env` if missing or default.
+- **Rate Limits**: `POST /api/ask-master` is limited to 100 requests per 15 minutes per IP.
+- **3D Logic**:
+  - `public/js/core/app.js`: Scene lifecycle and state.
+  - `public/js/modules/hand-tracker.js`: Maps MediaPipe gestures to 3D controls with EMA smoothing.

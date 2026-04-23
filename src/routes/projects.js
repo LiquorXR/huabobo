@@ -6,12 +6,10 @@ const router = express.Router();
 // Get current user's projects
 router.get('/', authMiddleware, async (req, res) => {
     try {
-        console.log('[DEBUG] GET /api/projects for user:', req.user.userId);
         const projects = await Project.findAll({
             where: { userId: req.user.userId },
             order: [['updatedAt', 'DESC']]
         });
-        console.log('[DEBUG] Found projects:', projects.length);
         res.json(projects);
     } catch (e) {
         res.status(500).json({ error: e.message });

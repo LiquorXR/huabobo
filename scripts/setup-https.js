@@ -17,4 +17,4 @@ console.log('   - Cert: ' + certPath);
 console.log('\nNext steps:');
 console.log('1. Set USE_HTTPS=true in your .env file.');
 console.log('2. Restart the server.');
-console.log('3. Visit https://localhost:3000 (you will see a security warning).');
+console.log('3. Visit https://localhost:3179 (you will see a security warning).');

@@ -371,13 +371,7 @@ export const App = {
 
     loadExternalModel(modelData) {
         return new Promise((resolve, reject) => {
-            let path = modelData.path;
-            
-            // If path is a relative path to static files, we still support it for now
-            // but the new models will have full /api/resources/models/:id paths
-            if (!path.startsWith('http') && !path.startsWith('/') && !path.startsWith('models/')) {
-                path = 'models/' + path;
-            }
+            const path = modelData.path;
 
 
             const sourceForExt = modelData.file_name || path;

@@ -29,7 +29,7 @@
 </head>
 <body>
     <!-- Top Bar -->
-    <header class="fixed top-0 inset-x-0 z-[100] px-6 py-4 lg:px-10 lg:py-6 flex flex-row justify-between items-start lg:items-center gap-6 pointer-events-none">
+    <header id="top-header" class="fixed top-0 inset-x-0 z-[100] px-6 py-4 lg:px-10 lg:py-6 flex flex-row justify-between items-start lg:items-center gap-6 pointer-events-none">
         <!-- Left: Title Component (Calligraphy Style) -->
         <div class="flex items-center pointer-events-auto mt-1 lg:mt-0">
             <div class="flex items-center gap-2 group transition-all duration-700 hover:scale-[1.02]">
@@ -55,9 +55,9 @@
             <!-- Row 2 (Mobile) / Left (PC): Community & Account -->
             <div class="flex items-center gap-3 pointer-events-auto order-2 lg:order-1">
                 <!-- Community Button -->
-                <button onclick="UI.toggleCommunity()" class="bg-white/70 backdrop-blur-md text-rose-500 border border-white/50 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-white transition-all active:scale-95">
+                <button id="community-nav-btn" onclick="UI.toggleCommunity()" class="bg-white/70 backdrop-blur-md text-rose-500 border border-white/50 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-white transition-all active:scale-95">
                     <i data-lucide="compass" size="18"></i>
-                    <span class="hidden sm:inline text-sm">灵感社区</span>
+                    <span class="hidden sm:inline text-sm" id="community-nav-label">灵感社区</span>
                 </button>
                 
                 <!-- Account Button -->
@@ -106,17 +106,25 @@
 
     <!-- 3D Canvas Container -->
     <div id="canvas-container" class="relative">
+        <div id="studio-atmosphere" class="absolute inset-0 pointer-events-none z-[1]">
+            <div class="absolute inset-x-0 top-0 h-[28vh] bg-gradient-to-b from-white/30 via-white/10 to-transparent"></div>
+            <div class="absolute -left-24 top-20 w-72 h-72 rounded-full bg-amber-300/20 blur-3xl"></div>
+            <div class="absolute right-[-60px] top-32 w-80 h-80 rounded-full bg-orange-300/15 blur-3xl"></div>
+            <div class="absolute left-1/2 bottom-[-120px] -translate-x-1/2 w-[70vw] h-56 rounded-full bg-slate-900/10 blur-3xl"></div>
+        </div>
         <!-- Left Side Controls (Carousel & Reset Button) -->
         <div id="left-controls-container" class="absolute top-20 lg:top-28 left-4 lg:left-8 z-[50] flex items-start gap-4 pointer-events-none">
             <!-- Image Carousel -->
             <div id="image-carousel" class="w-28 lg:w-44 pointer-events-auto shrink-0">
                 <div class="relative w-full aspect-[4/5] bg-white/20 backdrop-blur-xl rounded-[2rem] border border-white/30 shadow-2xl overflow-hidden group/carousel">
                     <div id="carousel-slides" class="flex transition-transform duration-500 ease-out h-full">
-                        <div class="w-full h-full shrink-0"><img src="photo/1.jpg" class="w-full h-full object-cover"></div>
-                        <div class="w-full h-full shrink-0"><img src="photo/2.jpg" class="w-full h-full object-cover"></div>
-                        <div class="w-full h-full shrink-0"><img src="photo/3.jpg" class="w-full h-full object-cover"></div>
-                        <div class="w-full h-full shrink-0"><img src="photo/4.jpg" class="w-full h-full object-cover"></div>
-                        <div class="w-full h-full shrink-0"><img src="photo/5.jpg" class="w-full h-full object-cover"></div>
+                        <div class="w-full h-full shrink-0 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center px-4 text-center">
+                            <div class="space-y-2">
+                                <p class="text-[10px] font-black tracking-[0.35em] text-amber-500 uppercase">Heritage Display</p>
+                                <p class="text-sm font-black text-slate-800">社区轮播图加载中</p>
+                                <p class="text-[11px] leading-relaxed text-slate-500">如后台尚未上传轮播图，这里会保留安全占位，不再引用缺失的静态图片。</p>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Navigation Arrows -->
@@ -382,18 +390,75 @@
         </div>
     </div>
 
-    <!-- Community Modal (Full Screen Overlay) -->
-    <div id="community-modal" class="fixed inset-0 bg-[#f8f8f8] z-[600] translate-y-full transition-transform duration-500 ease-out flex flex-col">
-        <header class="bg-white/80 backdrop-blur-xl shrink-0 px-6 py-4 flex items-center justify-between border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-            <div class="flex items-center gap-3">
-                <button onclick="UI.toggleCommunity()" class="p-2 text-gray-500 hover:text-rose-600 transition-colors"><i data-lucide="chevron-down" size="28"></i></button>
-                <h2 class="text-2xl font-black text-slate-800 tracking-wider">灵感<span class="text-rose-500">发现</span></h2>
+    <!-- Community Home View -->
+    <div id="community-modal" class="fixed inset-0 bg-gradient-to-br from-[#fffaf4] via-[#fffdf8] to-[#fff4ea] z-[600] translate-y-full transition-transform duration-500 ease-out flex flex-col">
+        <header class="bg-white/85 backdrop-blur-xl shrink-0 px-4 py-4 lg:px-8 lg:py-5 flex items-center justify-between border-b border-amber-100 sticky top-0 z-10 shadow-sm">
+            <div class="flex items-center gap-3 lg:gap-4 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg flex items-center justify-center shrink-0">
+                    <i data-lucide="sparkles" size="20"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-[10px] lg:text-xs font-black uppercase tracking-[0.35em] text-amber-500 mb-1">Community First</p>
+                    <h2 class="text-xl lg:text-3xl font-black text-slate-800 tracking-tight">灵感发现</h2>
+                </div>
             </div>
-            <button onclick="UI.refreshCommunity()" class="p-2.5 bg-gray-100 text-gray-600 hover:text-rose-600 rounded-full transition-colors active:rotate-180"><i data-lucide="refresh-cw" size="20"></i></button>
+            <div class="flex items-center gap-2 lg:gap-3 shrink-0">
+                <button onclick="UI.refreshCommunityHome()" class="p-2.5 bg-white text-slate-500 hover:text-rose-600 rounded-full border border-slate-200 transition-colors shadow-sm">
+                    <i data-lucide="refresh-cw" size="18"></i>
+                </button>
+                <button onclick="UI.showDIYView()" class="px-4 py-2.5 lg:px-5 lg:py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm tracking-wide shadow-lg shadow-orange-500/20 hover:opacity-95 transition-all flex items-center gap-2">
+                    <i data-lucide="wand-sparkles" size="18"></i>
+                    <span>进入DIY体验</span>
+                </button>
+            </div>
         </header>
-        <div class="flex-1 overflow-y-auto p-4 sm:p-8" id="community-waterfall">
-            <!-- Masonry Grid Injects Here -->
-            <div class="waterfall-grid" id="community-grid"></div>
+        <div class="flex-1 overflow-y-auto scrollbar-hide">
+            <div class="max-w-[1600px] mx-auto px-4 py-4 lg:px-8 lg:py-8 grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-5 lg:gap-8">
+                <aside class="space-y-5">
+                    <div id="community-home-profile"></div>
+                    <section class="bg-white/90 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl overflow-hidden">
+                        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">My Works</p>
+                                <h3 class="text-lg font-black text-slate-800 mt-1">我的作品</h3>
+                            </div>
+                            <button onclick="UI.showDIYView()" class="px-3 py-2 rounded-xl bg-amber-50 text-amber-700 text-xs font-black hover:bg-amber-100 transition-colors">去创作</button>
+                        </div>
+                        <div id="community-user-projects-list" class="p-4 space-y-4 max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-hide">
+                            <div class="text-center text-slate-400 py-6 text-sm animate-pulse">加载中...</div>
+                        </div>
+                    </section>
+                </aside>
+
+                <section class="min-w-0 space-y-5">
+                    <div id="community-hero-card" class="relative overflow-hidden bg-white/90 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl px-5 py-5 lg:px-7 lg:py-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                        <div class="absolute inset-0 pointer-events-none opacity-70 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(249,115,22,0.14),transparent_30%)]"></div>
+                        <div class="absolute right-[-40px] top-[-30px] w-48 h-48 rounded-full border border-amber-200/60 opacity-60"></div>
+                        <div class="absolute right-8 bottom-[-55px] w-36 h-36 rounded-full border border-orange-200/50 opacity-50"></div>
+                        <div>
+                            <p class="text-[10px] font-black uppercase tracking-[0.35em] text-rose-400 mb-2 relative z-10">Inspiration Feed</p>
+                            <h3 class="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight relative z-10">非遗数字展陈中的创作长廊</h3>
+                            <p class="text-sm lg:text-base text-slate-500 mt-2 max-w-3xl relative z-10">这里先看大家如何把花饽饽做成一场视觉陈列。左侧管理你的身份与作品，中间浏览社区灵感，准备好了就切入 DIY 工作台开始创作。</p>
+                            <div class="hidden lg:flex items-center gap-3 mt-5 relative z-10">
+                                <div class="px-3 py-2 rounded-full bg-white/80 border border-amber-100 text-[11px] font-black tracking-[0.25em] text-amber-600 uppercase">作品公开展区</div>
+                                <div class="px-3 py-2 rounded-full bg-white/80 border border-slate-100 text-[11px] font-black tracking-[0.25em] text-slate-500 uppercase">社区优先入口</div>
+                            </div>
+                            <div class="flex lg:hidden gap-2 mt-4">
+                                <button onclick="UI.toggleAccount()" class="flex-1 px-4 py-3 rounded-2xl bg-slate-100 text-slate-700 font-black text-sm">账号面板</button>
+                                <button onclick="UI.showDIYView()" class="flex-1 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm shadow-lg shadow-orange-500/20">去做花饽饽</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-[0.25em] relative z-10">
+                            <i data-lucide="gallery-vertical-end" size="16"></i>
+                            <span>公开作品</span>
+                        </div>
+                    </div>
+
+                    <div id="community-waterfall" class="bg-white/75 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl p-4 lg:p-6">
+                        <div class="waterfall-grid" id="community-grid"></div>
+                    </div>
+                </section>
+            </div>
         </div>
     </div>
 
@@ -404,7 +469,7 @@
         import { Master } from './js/modules/master.js';
         import { Carousel } from './js/ui/carousel.js';
 
-        // Bind modules to window for legacy onclick handlers
+        // Bind modules to window for inline onclick handlers used by the current UI
         window.App = App;
         window.UI = UI;
         window.Master = Master;

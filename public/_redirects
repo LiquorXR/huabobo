@@ -1,5 +1,0 @@
-# 为 API 路径保留原始响应，不应用重定向
-/api/*  /api/:splat  200
-
-# 其他所有未匹配路径均重定向到 index.html
-/*  /index.html  200

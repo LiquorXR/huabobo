@@ -6,17 +6,24 @@ services:
     ports:
       - "3179:3179"
     environment:
+      - NODE_ENV=production
       - PORT=3179
+      - DB_DIALECT=postgres
       - DB_HOST=db
       - DB_USER=postgres
       - DB_PASS=postgres_password
       - DB_NAME=huabobo
-      - JWT_SECRET=您的私钥_请勿泄露!
+      - DB_PORT=5432
     env_file:
       - .env
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:' + (process.env.PORT || 3179) + '/api/config').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   db:
     image: postgres:15-alpine
@@ -26,8 +33,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres_password
       POSTGRES_DB: huabobo
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d huabobo"]
       interval: 5s

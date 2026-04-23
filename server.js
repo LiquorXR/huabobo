@@ -13,23 +13,27 @@ require('dotenv').config();
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'huabobo_secret_key_change_in_prod') {
     const newSecret = crypto.randomBytes(32).toString('hex');
     process.env.JWT_SECRET = newSecret;
-    const envPath = path.join(__dirname, '.env');
-    try {
-        if (fs.existsSync(envPath)) {
-            let content = fs.readFileSync(envPath, 'utf-8');
-            if (content.includes('JWT_SECRET=')) {
-                content = content.replace(/JWT_SECRET=.*/, `JWT_SECRET=${newSecret}`);
+    if (process.env.NODE_ENV !== 'production') {
+        const envPath = path.join(__dirname, '.env');
+        try {
+            if (fs.existsSync(envPath)) {
+                let content = fs.readFileSync(envPath, 'utf-8');
+                if (content.includes('JWT_SECRET=')) {
+                    content = content.replace(/JWT_SECRET=.*/, `JWT_SECRET=${newSecret}`);
+                } else {
+                    content += `\nJWT_SECRET=${newSecret}`;
+                }
+                fs.writeFileSync(envPath, content);
+                console.log('[SECURITY] Generated and persisted new JWT_SECRET to .env');
             } else {
-                content += `\nJWT_SECRET=${newSecret}`;
+                fs.writeFileSync(envPath, `JWT_SECRET=${newSecret}\n`);
+                console.log('[SECURITY] Created .env and persisted new JWT_SECRET');
             }
-            fs.writeFileSync(envPath, content);
-            console.log('[SECURITY] Generated and persisted new JWT_SECRET to .env');
-        } else {
-            fs.writeFileSync(envPath, `JWT_SECRET=${newSecret}\n`);
-            console.log('[SECURITY] Created .env and persisted new JWT_SECRET');
+        } catch (err) {
+            console.warn('[SECURITY] Generated new JWT_SECRET but failed to persist to .env:', err.message);
         }
-    } catch (err) {
-        console.warn('[SECURITY] Generated new JWT_SECRET but failed to persist to .env:', err.message);
+    } else {
+        console.warn('[SECURITY] JWT_SECRET missing in production; generated an in-memory fallback for this process only.');
     }
 }
 
@@ -42,7 +46,7 @@ const resourceRoutes = require('./src/routes/resources');
 
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3179;
 
 // Initialize Database
 syncDatabase().catch(err => console.error("DB Sync Error:", err));
@@ -176,7 +180,6 @@ function getLocalIP() {
 
 // Start server
 const localIP = getLocalIP();
-const protocol = process.env.USE_HTTPS === 'true' ? 'https' : 'http';
 
 if (process.env.USE_HTTPS === 'true') {
     try {
