@@ -147,17 +147,34 @@ const dropSQLiteBackupTables = async () => {
 const runMigrations = async () => {
     if (dialect === 'postgres' && process.env.NODE_ENV === 'production') {
         try {
-            // Users table
             await sequelize.query(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS username VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS role VARCHAR(255) DEFAULT 'user'`);
             await sequelize.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON "Users" (email)`);
-            // CarouselImages table
-            await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS file_path VARCHAR(255)`);
-            await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS file_name VARCHAR(255)`);
-            await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS mime_type VARCHAR(255)`);
-            // ModelResources table
-            await sequelize.query(`ALTER TABLE "ModelResources" ADD COLUMN IF NOT EXISTS file_path VARCHAR(255)`);
+            await sequelize.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON "Users" (username)`);
+
+            await sequelize.query(`ALTER TABLE "Projects" ADD COLUMN IF NOT EXISTS name VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "Projects" ADD COLUMN IF NOT EXISTS thumbnail TEXT`);
+            await sequelize.query(`ALTER TABLE "Projects" ADD COLUMN IF NOT EXISTS scene_data TEXT`);
+            await sequelize.query(`ALTER TABLE "Projects" ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT false`);
+            await sequelize.query(`ALTER TABLE "Projects" ADD COLUMN IF NOT EXISTS "userId" UUID`);
+
+            await sequelize.query(`ALTER TABLE "Likes" ADD COLUMN IF NOT EXISTS "userId" UUID`);
+            await sequelize.query(`ALTER TABLE "Likes" ADD COLUMN IF NOT EXISTS "projectId" UUID`);
+
+            await sequelize.query(`ALTER TABLE "ModelResources" ADD COLUMN IF NOT EXISTS name VARCHAR(255)`);
             await sequelize.query(`ALTER TABLE "ModelResources" ADD COLUMN IF NOT EXISTS file_name VARCHAR(255)`);
             await sequelize.query(`ALTER TABLE "ModelResources" ADD COLUMN IF NOT EXISTS mime_type VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "ModelResources" ADD COLUMN IF NOT EXISTS file_path VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "ModelResources" ADD COLUMN IF NOT EXISTS thumbnail TEXT`);
+            await sequelize.query(`ALTER TABLE "ModelResources" ADD COLUMN IF NOT EXISTS metadata TEXT`);
+
+            await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS "order" INTEGER DEFAULT 0`);
+            await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS file_name VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS mime_type VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS file_path VARCHAR(255)`);
+
             console.log('[DB] Production migrations applied.');
         } catch (e) {
             console.error('[DB] Migration error:', e.message);
