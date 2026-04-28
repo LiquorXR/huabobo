@@ -39,7 +39,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'huabobo_secret_key_ch
     }
 }
 
-const { syncDatabase } = require('./src/models');
+const { syncDatabase, runMigrations } = require('./src/models');
 const { router: authRoutes, authMiddleware } = require('./src/routes/auth');
 const projectRoutes = require('./src/routes/projects');
 const communityRoutes = require('./src/routes/community');
@@ -51,7 +51,9 @@ const app = express();
 const PORT = process.env.PORT || 3179;
 
 // Initialize Database
-syncDatabase().catch(err => console.error("DB Sync Error:", err));
+runMigrations()
+    .then(() => syncDatabase())
+    .catch(err => console.error("DB Init Error:", err));
 
 // Middleware
 app.use(compression());

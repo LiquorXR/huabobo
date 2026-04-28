@@ -144,6 +144,18 @@ const dropSQLiteBackupTables = async () => {
     }
 };
 
+const runMigrations = async () => {
+    if (dialect === 'postgres' && process.env.NODE_ENV === 'production') {
+        try {
+            await sequelize.query(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
+            await sequelize.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON "Users" (email)`);
+            console.log('[DB] Production migrations applied.');
+        } catch (e) {
+            console.error('[DB] Migration error:', e.message);
+        }
+    }
+};
+
 const syncDatabase = async () => {
     if (dialect === 'sqlite') {
         await sequelize.query('PRAGMA foreign_keys = OFF');
@@ -167,4 +179,4 @@ const syncDatabase = async () => {
     console.log("Database models synchronized.");
 };
 
-module.exports = { User, Project, Like, ModelResource, CarouselImage, syncDatabase, sequelize };
+module.exports = { User, Project, Like, ModelResource, CarouselImage, syncDatabase, runMigrations, sequelize };
