@@ -177,7 +177,9 @@ app.post('/api/ask-master', async (req, res) => {
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
         res.setHeader('X-Accel-Buffering', 'no');
-        res.setHeader('Content-Encoding', 'identity');
+
+        const streamController = new AbortController();
+        const streamTimeout = setTimeout(() => streamController.abort(), 15000);
 
         const apiResponse = await fetch(`${apiUrl}/chat/completions`, {
             method: "POST",
@@ -185,8 +187,11 @@ app.post('/api/ask-master', async (req, res) => {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${apiKey}`
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            signal: streamController.signal
         });
+
+        clearTimeout(streamTimeout);
 
         if (!apiResponse.ok) {
             const errorData = await apiResponse.text();
