@@ -1414,13 +1414,11 @@ export const UI = {
         const container = document.getElementById('assistant-container');
         const dots = document.getElementById('master-thinking-dots');
         const content = document.getElementById('master-speech-content');
-        const thinkingContainer = document.getElementById('master-thinking-container');
 
         if (isThinking) {
             if (container) container.classList.add('is-thinking');
             if (dots) dots.classList.remove('hidden');
             if (content) content.innerText = "师傅正在审视作品，请稍候...";
-            if (thinkingContainer) thinkingContainer.classList.add('hidden');
         } else {
             if (container) container.classList.remove('is-thinking');
             if (dots) dots.classList.add('hidden');
@@ -1454,6 +1452,7 @@ export const UI = {
 
     streamingStart() {
         const content = document.getElementById('master-speech-content');
+        const dots = document.getElementById('master-thinking-dots');
         if (!content) return;
 
         const dialog = document.getElementById('master-dialog');
@@ -1461,6 +1460,7 @@ export const UI = {
             this.toggleMasterDialog();
         }
 
+        if (dots) dots.classList.add('hidden');
         content.innerText = '';
     },
 
@@ -1470,18 +1470,11 @@ export const UI = {
         content.innerText += text;
     },
 
-    updateThinkingContent(reasoning) {
-        const container = document.getElementById('master-thinking-container');
-        const text = document.getElementById('master-thinking-text');
-        if (!container || !text) return;
-
-        const dialog = document.getElementById('master-dialog');
-        if (dialog && dialog.classList.contains('hidden')) {
-            this.toggleMasterDialog();
+    showReasoningProgress() {
+        const content = document.getElementById('master-speech-content');
+        if (content) {
+            content.innerText = "师傅正在深度思考，请稍候...";
         }
-
-        container.classList.remove('hidden');
-        text.innerText = reasoning;
     },
 
     showGameOver() {

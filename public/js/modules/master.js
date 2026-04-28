@@ -75,8 +75,6 @@ export const Master = {
                     return;
                 }
                 const content = data.choices?.[0]?.message?.content || FALLBACK_TEXT;
-                const reasoning = data.choices?.[0]?.message?.reasoning_content;
-                if (reasoning) UI.updateThinkingContent(reasoning);
                 UI.updateSpeech(content);
             }
 
@@ -92,9 +90,9 @@ export const Master = {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullContent = '';
-        let fullReasoning = '';
         let buffer = '';
         let startedContent = false;
+        let reasoningActive = false;
 
         while (true) {
             const { done, value } = await reader.read();
@@ -119,9 +117,9 @@ export const Master = {
                     }
 
                     const delta = json.choices?.[0]?.delta;
-                    if (delta?.reasoning_content) {
-                        fullReasoning += delta.reasoning_content;
-                        UI.updateThinkingContent(fullReasoning);
+                    if (delta?.reasoning_content && !reasoningActive) {
+                        reasoningActive = true;
+                        UI.showReasoningProgress();
                     }
                     if (delta?.content) {
                         if (!startedContent) {

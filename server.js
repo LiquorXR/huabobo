@@ -176,6 +176,8 @@ app.post('/api/ask-master', async (req, res) => {
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+        res.setHeader('Content-Encoding', 'identity');
 
         const apiResponse = await fetch(`${apiUrl}/chat/completions`, {
             method: "POST",
@@ -195,6 +197,7 @@ app.post('/api/ask-master', async (req, res) => {
             return;
         }
 
+        req.socket?.setNoDelay?.(true);
         const reader = apiResponse.body.getReader();
         const decoder = new TextDecoder();
 
@@ -202,6 +205,7 @@ app.post('/api/ask-master', async (req, res) => {
             const { done, value } = await reader.read();
             if (done) break;
             res.write(decoder.decode(value, { stream: true }));
+            if (typeof res.flush === 'function') res.flush();
         }
 
         res.end();
