@@ -72,7 +72,12 @@ app.use(helmet({
             fontSrc: ["'self'"],
             workerSrc: ["'self'", "blob:"],
             mediaSrc: ["'self'"],
-        }
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            frameAncestors: ["'self'"],
+            objectSrc: ["'none'"],
+        },
+        useDefaults: false,
     },
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: "cross-origin" }
