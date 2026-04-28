@@ -147,8 +147,17 @@ const dropSQLiteBackupTables = async () => {
 const runMigrations = async () => {
     if (dialect === 'postgres' && process.env.NODE_ENV === 'production') {
         try {
+            // Users table
             await sequelize.query(`ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
             await sequelize.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON "Users" (email)`);
+            // CarouselImages table
+            await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS file_path VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS file_name VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS mime_type VARCHAR(255)`);
+            // ModelResources table
+            await sequelize.query(`ALTER TABLE "ModelResources" ADD COLUMN IF NOT EXISTS file_path VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "ModelResources" ADD COLUMN IF NOT EXISTS file_name VARCHAR(255)`);
+            await sequelize.query(`ALTER TABLE "ModelResources" ADD COLUMN IF NOT EXISTS mime_type VARCHAR(255)`);
             console.log('[DB] Production migrations applied.');
         } catch (e) {
             console.error('[DB] Migration error:', e.message);
