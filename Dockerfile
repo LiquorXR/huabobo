@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 
 ENV NODE_ENV=production
-RUN npm ci --omit=dev && \
+RUN npm install --omit=dev && \
     npm cache clean --force
 
 COPY . .
