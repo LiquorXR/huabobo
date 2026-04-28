@@ -175,6 +175,10 @@ const runMigrations = async () => {
             await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS mime_type VARCHAR(255)`);
             await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS file_path VARCHAR(255)`);
 
+            // Clean up legacy dirty data that causes 404s/500s because they lack file paths
+            await sequelize.query(`DELETE FROM "CarouselImages" WHERE file_path IS NULL`);
+            await sequelize.query(`DELETE FROM "ModelResources" WHERE file_path IS NULL`);
+
             console.log('[DB] Production migrations applied.');
         } catch (e) {
             console.error('[DB] Migration error:', e.message);
