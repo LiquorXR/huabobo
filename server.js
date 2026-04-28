@@ -7,6 +7,7 @@ const os = require('os');
 const crypto = require('crypto');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 const NodeCache = require('node-cache');
 require('dotenv').config();
 
@@ -59,6 +60,23 @@ if (corsOrigin === '*' && process.env.NODE_ENV === 'production') {
     console.warn('[SECURITY] CORS is open to all origins. Set CORS_ORIGIN in .env to restrict.');
 }
 app.use(cors({ origin: corsOrigin }));
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "blob:"],
+            scriptSrcAttr: ["'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "blob:"],
+            connectSrc: ["'self'"],
+            fontSrc: ["'self'"],
+            workerSrc: ["'self'", "blob:"],
+            mediaSrc: ["'self'"],
+        }
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ limit: '1mb', extended: true }));
 

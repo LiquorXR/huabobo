@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
     }
 });
 
-const allowedExtensions = ['.glb', '.gltf', '.obj', '.stl', '.3mf', '.ply', '.fbx', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+const allowedExtensions = ['.glb', '.gltf', '.obj', '.stl', '.3mf', '.ply', '.fbx', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
 
 const fileFilter = (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();

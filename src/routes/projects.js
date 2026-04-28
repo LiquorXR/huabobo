@@ -6,9 +6,13 @@ const router = express.Router();
 // Get current user's projects
 router.get('/', authMiddleware, async (req, res) => {
     try {
+        const limit = parseInt(req.query.limit) || 50;
+        const offset = parseInt(req.query.offset) || 0;
         const projects = await Project.findAll({
             where: { userId: req.user.userId },
-            order: [['updatedAt', 'DESC']]
+            order: [['updatedAt', 'DESC']],
+            limit,
+            offset
         });
         res.json(projects);
     } catch (e) {

@@ -22,7 +22,8 @@ const Project = sequelize.define('Project', {
     userId: { type: DataTypes.UUID, allowNull: true } // Explicitly defined foreign key
 }, {
     indexes: [
-        { fields: ['userId'] }
+        { fields: ['userId'] },
+        { fields: ['is_public', 'createdAt'] }
     ]
 });
 
@@ -32,7 +33,8 @@ const Like = sequelize.define('Like', {
 }, {
     indexes: [
         { fields: ['userId'] },
-        { fields: ['projectId'] }
+        { fields: ['projectId'] },
+        { unique: true, fields: ['userId', 'projectId'] }
     ]
 });
 
@@ -148,7 +150,11 @@ const syncDatabase = async () => {
     }
 
     try {
-        await sequelize.sync({ alter: true });
+        if (process.env.NODE_ENV === 'production') {
+            await sequelize.sync();
+        } else {
+            await sequelize.sync({ alter: true });
+        }
     } finally {
         if (dialect === 'sqlite') {
             await sequelize.query('PRAGMA foreign_keys = ON');
