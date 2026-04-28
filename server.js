@@ -122,7 +122,8 @@ app.get('/api/health', async (req, res) => {
         await sequelize.authenticate();
         res.json({ status: 'ok', db: 'connected' });
     } catch (e) {
-        res.status(503).json({ status: 'error', db: 'disconnected', message: e.message });
+        console.error('[Health] DB check failed:', e.message);
+        res.status(503).json({ status: 'error', db: 'disconnected', message: 'Database connection failed' });
     }
 });
 
@@ -190,9 +191,11 @@ app.post('/api/ask-master', authMiddleware, async (req, res) => {
 
             if (apiResponse.ok && data.choices && data.choices.length > 0) {
                 aiCache.set(cacheKey, data);
+                return res.json(data);
             }
 
-            return res.status(apiResponse.status).json(data);
+            console.error('[AskMaster] Upstream API error (non-streaming):', JSON.stringify(data).slice(0, 200));
+            return res.status(502).json({ error: { message: "AI 服务暂时不可用，请稍后重试" } });
         }
 
         res.setHeader('Content-Type', 'text/event-stream');
@@ -217,9 +220,8 @@ app.post('/api/ask-master', authMiddleware, async (req, res) => {
 
         if (!apiResponse.ok) {
             const errorData = await apiResponse.text();
-            let errorJson;
-            try { errorJson = JSON.parse(errorData); } catch (e) { errorJson = { message: errorData }; }
-            res.write(`data: ${JSON.stringify({ error: errorJson })}\n\n`);
+            console.error('[AskMaster] Upstream API error (streaming):', errorData.slice(0, 200));
+            res.write(`data: ${JSON.stringify({ error: { message: "AI 服务暂时不可用，请稍后重试" } })}\n\n`);
             res.end();
             return;
         }
@@ -237,11 +239,12 @@ app.post('/api/ask-master', authMiddleware, async (req, res) => {
 
         res.end();
     } catch (e) {
+        console.error('[AskMaster] Stream error:', e);
         if (res.headersSent && useStream) {
-            res.write(`data: ${JSON.stringify({ error: { message: e.message } })}\n\n`);
+            res.write(`data: ${JSON.stringify({ error: { message: "AI 服务暂时不可用，请稍后重试" } })}\n\n`);
             res.end();
         } else {
-            return res.status(500).json({ error: { message: e.message } });
+            return res.status(500).json({ error: { message: "AI 服务暂时不可用，请稍后重试" } });
         }
     }
 });

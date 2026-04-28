@@ -63,7 +63,7 @@ router.get('/', async (req, res) => {
 
         res.json(results);
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Community]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -87,7 +87,7 @@ router.post('/:id/like', authMiddleware, async (req, res) => {
         if (e.name === 'SequelizeUniqueConstraintError') {
             return res.json({ liked: true });
         }
-        res.status(500).json({ error: e.message });
+        console.error('[Community]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 

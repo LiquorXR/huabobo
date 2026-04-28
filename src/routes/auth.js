@@ -48,7 +48,7 @@ router.post('/check-register', async (req, res) => {
         const availability = await getRegisterAvailability(username, email);
         res.json(availability);
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Auth]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -76,7 +76,7 @@ router.post('/register', async (req, res) => {
         const token = signToken(user);
         res.json({ token, user: buildUserPayload(user) });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Auth]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -100,7 +100,7 @@ router.post('/login', async (req, res) => {
         const token = signToken(user);
         res.json({ token, user: buildUserPayload(user) });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Auth]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -137,7 +137,7 @@ router.put('/username', authMiddleware, async (req, res) => {
         const token = signToken(user);
         res.json({ success: true, token, user: buildUserPayload(user) });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Auth]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -162,7 +162,7 @@ router.put('/email', authMiddleware, async (req, res) => {
         const token = signToken(user);
         res.json({ success: true, token, user: buildUserPayload(user) });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Auth]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -198,7 +198,7 @@ router.put('/password', authMiddleware, async (req, res) => {
         const token = signToken(user);
         res.json({ success: true, token, user: buildUserPayload(user) });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Auth]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -258,7 +258,7 @@ router.put('/account', authMiddleware, async (req, res) => {
         const token = signToken(user);
         res.json({ success: true, token, user: buildUserPayload(user) });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Auth]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 

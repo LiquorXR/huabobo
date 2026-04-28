@@ -14,7 +14,7 @@ router.get('/models', async (req, res) => {
 
         res.json(models);
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Resources]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -36,7 +36,7 @@ router.get('/models/:id', async (req, res) => {
         });
         readStream.pipe(res);
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Resources]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -49,7 +49,7 @@ router.get('/carousel', async (req, res) => {
         });
         res.json(images);
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Resources]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -71,7 +71,7 @@ router.get('/carousel/:id', async (req, res) => {
         });
         readStream.pipe(res);
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Resources]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 

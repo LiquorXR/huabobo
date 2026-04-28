@@ -16,7 +16,7 @@ router.get('/', authMiddleware, async (req, res) => {
         });
         res.json(projects);
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Projects]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -48,7 +48,7 @@ router.post('/', authMiddleware, async (req, res) => {
             return res.json(project);
         }
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Projects]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -67,7 +67,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
         
         res.json({ success: true });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[Projects]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
