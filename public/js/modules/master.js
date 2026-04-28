@@ -42,9 +42,13 @@ export const Master = {
 
             const screenshot = renderer.domElement.toDataURL('image/png');
 
+            const headers = { "Content-Type": "application/json" };
+            const token = localStorage.getItem('huabobo_token');
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
             const response = await fetch('/api/ask-master', {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify({
                     model: this.modelName,
                     messages: [

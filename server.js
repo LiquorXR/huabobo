@@ -39,7 +39,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'huabobo_secret_key_ch
 }
 
 const { syncDatabase } = require('./src/models');
-const authRoutes = require('./src/routes/auth').router;
+const { router: authRoutes, authMiddleware } = require('./src/routes/auth');
 const projectRoutes = require('./src/routes/projects');
 const communityRoutes = require('./src/routes/community');
 const adminRoutes = require('./src/routes/admin');
@@ -61,6 +61,10 @@ if (corsOrigin === '*' && process.env.NODE_ENV === 'production') {
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ limit: '1mb', extended: true }));
+
+if (process.env.TRUST_PROXY !== 'false') {
+    app.set('trust proxy', 1);
+}
 
 
 // Security: Rate limiting for the AI API
@@ -111,7 +115,7 @@ app.get('/api/config', (req, res) => {
     });
 });
 
-app.post('/api/ask-master', async (req, res) => {
+app.post('/api/ask-master', authMiddleware, async (req, res) => {
     try {
         const { model, messages, stream: useStream, enableThinking } = req.body;
         const apiKey = process.env.OPENAI_API_KEY;
@@ -233,7 +237,7 @@ try {
     if (fs.existsSync(indexPath)) {
         const modelName = process.env.OPENAI_MODEL || 'gpt-4o-mini';
         const enableThinking = process.env.OPENAI_ENABLE_THINKING === 'true';
-        const injectedScript = `<script>window.ENV_CONFIG = { OPENAI_MODEL: "${modelName}", OPENAI_ENABLE_THINKING: ${enableThinking} };</script>`;
+        const injectedScript = `<script>window.ENV_CONFIG = { OPENAI_MODEL: ${JSON.stringify(modelName).replace(/</g, '\\x3c')}, OPENAI_ENABLE_THINKING: ${enableThinking} };</script>`;
         cachedIndexHtml = fs.readFileSync(indexPath, 'utf-8').replace('</head>', `${injectedScript}</head>`);
         console.log('[INIT] index.html cached in memory');
     }
