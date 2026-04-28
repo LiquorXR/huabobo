@@ -85,6 +85,93 @@
     overscroll-behavior: contain;
 }
 
+.community-dashboard-body {
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.community-dashboard-shell {
+    min-height: 0;
+    box-sizing: border-box;
+    padding-bottom: 2rem;
+}
+
+.community-sidebar,
+.community-feed-panel {
+    min-height: 0;
+}
+
+.community-works-card {
+    display: flex;
+    flex-direction: column;
+    box-shadow: none;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(251, 191, 36, 0.24) !important;
+}
+
+.community-user-projects-panel,
+.community-waterfall-panel {
+    min-height: 0;
+    overscroll-behavior: contain;
+    background-clip: padding-box;
+}
+
+.community-user-projects-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    border-bottom-left-radius: 2rem;
+    border-bottom-right-radius: 2rem;
+}
+
+.community-waterfall-panel {
+    border-radius: 2rem;
+}
+
+@media (min-width: 1280px) {
+    .community-dashboard-header {
+        flex: 0 0 auto;
+    }
+
+    .community-dashboard-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .community-dashboard-shell {
+        min-height: 100%;
+        overflow: visible;
+    }
+
+    .community-sidebar {
+        min-height: 0;
+    }
+
+    #community-home-profile {
+        flex: none;
+    }
+
+    .community-works-card {
+        min-height: 0;
+    }
+
+    .community-user-projects-panel {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .community-feed-panel {
+        min-height: 0;
+    }
+
+    .community-waterfall-panel {
+        max-height: none;
+        overflow: visible;
+    }
+}
+
 #community-modal .project-card {
     margin-bottom: 0;
 }
@@ -98,28 +185,43 @@
 #community-home-profile section,
 #community-user-projects-list,
 #community-modal .project-card {
-    box-shadow: 0 18px 45px rgba(120, 53, 15, 0.08);
+    box-shadow: none;
 }
 
 #community-waterfall {
-    background-image: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,250,244,0.94));
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,245,235,0.98));
+    border-color: rgba(251, 191, 36, 0.28);
 }
 
 #community-user-projects-list {
-    background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,248,240,0.9));
+    background: linear-gradient(180deg, rgba(255,252,248,0.98), rgba(255,241,229,0.98));
+    border-top: 1px solid rgba(251, 191, 36, 0.16);
 }
 
 #community-home-profile section {
-    background-image: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,250,244,0.96));
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(255,244,232,0.99));
+    border-color: rgba(251, 191, 36, 0.24);
+}
+
+#community-hero-card {
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(255,246,236,0.99));
+    border-color: rgba(251, 191, 36, 0.24);
+}
+
+#community-modal header {
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,248,240,0.94));
+    border-bottom-color: rgba(251, 191, 36, 0.24);
 }
 
 #community-modal .project-card {
-    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,249,243,0.98));
+    background: linear-gradient(180deg, rgba(255,255,255,1), rgba(255,243,231,0.98));
+    border-color: rgba(251, 191, 36, 0.22);
 }
 
 #community-modal .project-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 18px 32px rgba(120, 53, 15, 0.12);
+    box-shadow: none;
+    border-color: rgba(249, 115, 22, 0.38);
 }
 
 #community-home-profile section,
@@ -129,8 +231,20 @@
 }
 
 @media (max-width: 1279px) {
+    .community-dashboard-body {
+        overflow-y: auto;
+    }
+
+    .community-dashboard-shell {
+        height: auto;
+    }
+
     #community-user-projects-list {
         max-height: none !important;
+    }
+
+    .community-waterfall-panel {
+        overflow: visible;
     }
 }
 
@@ -139,30 +253,132 @@
         background: linear-gradient(180deg, #fffaf4 0%, #fff7ef 100%);
     }
 
+    .community-dashboard-body {
+        padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    }
+
+    .community-dashboard-shell {
+        padding: 0.875rem 0.875rem 1.5rem;
+        gap: 1rem;
+    }
+
     #community-modal header {
-        padding-top: max(1rem, env(safe-area-inset-top));
+        padding-top: max(0.9rem, env(safe-area-inset-top));
+        padding-bottom: 1rem;
+        gap: 0.9rem;
+        border-bottom-color: rgba(251, 191, 36, 0.18);
+    }
+
+    .community-dashboard-header > div:last-child {
+        width: 100%;
+    }
+
+    .community-sidebar,
+    .community-feed-panel {
+        gap: 1rem;
     }
 
     #community-waterfall {
         padding: 0.875rem;
-        border-radius: 1.5rem;
+        border-radius: 1.75rem;
+    }
+
+    .community-works-card {
+        border-radius: 1.75rem;
+    }
+
+    .community-works-card > div:first-child {
+        padding: 1rem;
+    }
+
+    .community-user-projects-panel {
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        gap: 0.875rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0.875rem 0.875rem 1rem;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+        border-bottom-left-radius: 1.5rem;
+        border-bottom-right-radius: 1.5rem;
+    }
+
+    .community-user-projects-panel > * {
+        flex: 0 0 min(15.5rem, 82vw);
+        margin-top: 0 !important;
+        scroll-snap-align: start;
+    }
+
+    .community-user-projects-panel .project-card {
+        width: min(15.5rem, 82vw);
+        min-width: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border-radius: 1.4rem;
+    }
+
+    .community-user-projects-panel .project-card .h-40 {
+        height: 10rem;
+    }
+
+    .community-waterfall-panel {
+        border-radius: 1.75rem;
     }
 
     #community-hero-card {
         padding: 1rem;
-        border-radius: 1.5rem;
+        border-radius: 1.75rem;
     }
 
     #community-home-profile section {
-        border-radius: 1.5rem;
+        border-radius: 1.75rem;
+        overflow: hidden;
+    }
+
+    #community-home-profile section .p-5,
+    #community-home-profile section .lg\:p-6 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    #community-home-profile section .flex.items-center.gap-4 {
+        align-items: flex-start;
+        gap: 0.875rem;
+    }
+
+    .waterfall-grid {
+        column-count: 2;
+        column-gap: 0.7rem;
+        max-width: none;
     }
 
     #community-modal .project-card {
         border-radius: 1.25rem;
     }
 
+    .waterfall-item {
+        border-radius: 1.35rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .waterfall-img {
+        aspect-ratio: 4 / 3.2;
+    }
+
     #community-modal .waterfall-footer {
         padding: 0.875rem;
+        align-items: center;
+    }
+
+    #community-modal .waterfall-footer .flex.items-center.gap-2 {
+        min-width: 0;
+    }
+
+    #community-modal .waterfall-footer .truncate {
+        max-width: 4.75rem;
     }
 }
 

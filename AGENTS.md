@@ -3,8 +3,10 @@
 ## 🛠 Critical Commands
 - `npm run dev`: Starts the development server using nodemon (`nodemon server.js`). Primary command for local development.
 - `node scripts/setup-https.js`: Required to generate local certificates if `USE_HTTPS=true` is set in `.env`. Do this before starting the server in HTTPS mode.
+- `docker compose up -d --build`: Production deployment with PostgreSQL.
 
 ## 🏗 Architecture Context
+- **Default Port**: `3179`
 - **Config Injection**: `server.js` dynamically injects `window.ENV_CONFIG` into `public/index.html` by replacing the `</head>` tag. **Never** remove the `</head>` tag from `index.html`.
 - **API Proxy**: All Gemini API calls must go through `POST /api/ask-master`. The client never calls Gemini directly. Enforced `maxOutputTokens: 100`.
 - **Database**: Sequelize with `{ alter: true }` syncs schema on startup.
@@ -16,8 +18,8 @@
 
 ## 🤖 Operation & Constraints
 - **Environment**: `.env` is required. `GEMINI_API_KEY` is mandatory.
-- **Security**: `server.js` auto-generates `JWT_SECRET` and writes it to `.env` if missing or default.
+- **Security**: `server.js` auto-generates `JWT_SECRET` and writes it to `.env` if missing or default (only when `NODE_ENV !== 'production'`).
 - **Rate Limits**: `POST /api/ask-master` is limited to 100 requests per 15 minutes per IP.
 - **3D Logic**:
-  - `public/js/core/app.js`: Scene lifecycle and state.
+  - `public/js/core/app.js`: Scene lifecycle and state. Supports OBJ, STL, and 3MF exports.
   - `public/js/modules/hand-tracker.js`: Maps MediaPipe gestures to 3D controls with EMA smoothing.

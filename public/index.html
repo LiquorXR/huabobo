@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,7 +8,7 @@
     <!-- External Dependencies (Localized) -->
     <link rel="preload" href="lib/mediapipe/hands_solution_simd_wasm_bin.wasm" as="fetch" crossorigin="anonymous">
     <link rel="preload" href="lib/mediapipe/hands_solution_packed_assets.data" as="fetch" crossorigin="anonymous">
-    
+
     <script src="lib/three/three.min.js"></script>
     <script src="lib/three/GLTFLoader.js"></script>
     <script src="lib/three/DRACOLoader.js"></script>
@@ -21,31 +22,37 @@
     <!-- UI Framework & Icons (Current CDN, suggested for local download in public/lib/) -->
     <script src="lib/tailwind.min.js"></script>
     <script src="lib/lucide/lucide.min.js"></script>
-    
+
     <!-- 核心样式与资源本地化 -->
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/auth.css">
     <link rel="stylesheet" href="css/community.css">
 </head>
+
 <body>
     <!-- Top Bar -->
-    <header id="top-header" class="fixed top-0 inset-x-0 z-[100] px-6 py-4 lg:px-10 lg:py-6 flex flex-row justify-between items-start lg:items-center gap-6 pointer-events-none">
+    <header id="top-header"
+        class="fixed top-0 inset-x-0 z-[100] px-6 py-4 lg:px-10 lg:py-6 flex flex-row justify-between items-start lg:items-center gap-6 pointer-events-none">
         <!-- Left: Title Component (Calligraphy Style) -->
         <div class="flex items-center pointer-events-auto mt-1 lg:mt-0">
             <div class="flex items-center gap-2 group transition-all duration-700 hover:scale-[1.02]">
                 <div class="flex flex-col items-end shrink-0 opacity-40 leading-tight">
-                    <span class="text-amber-700 font-black text-[10px] lg:text-[12px] tracking-[0.4em] uppercase block">Digital</span>
-                    <span class="text-orange-600 font-bold text-[8px] lg:text-[10px] tracking-[0.2em] uppercase italic block">Heritage</span>
+                    <span
+                        class="text-amber-700 font-black text-[10px] lg:text-[12px] tracking-[0.4em] uppercase block">Digital</span>
+                    <span
+                        class="text-orange-600 font-bold text-[8px] lg:text-[10px] tracking-[0.2em] uppercase italic block">Heritage</span>
                 </div>
-                
+
                 <div class="relative shrink-0">
-                    <h1 class="title-gradient font-normal text-4xl lg:text-6xl leading-none tracking-normal font-calligraphy select-none px-1">
+                    <h1
+                        class="title-gradient font-normal text-4xl lg:text-6xl leading-none tracking-normal font-calligraphy select-none px-1">
                         花饽饽
                     </h1>
                 </div>
 
                 <div class="shrink-0 flex justify-start">
-                    <span class="title-gradient font-black text-2xl lg:text-3xl leading-none tracking-tighter opacity-60 italic">DIY&nbsp;&nbsp;</span>
+                    <span
+                        class="title-gradient font-black text-2xl lg:text-3xl leading-none tracking-tighter opacity-60 italic">DIY&nbsp;&nbsp;</span>
                 </div>
             </div>
         </div>
@@ -55,22 +62,18 @@
             <!-- Row 2 (Mobile) / Left (PC): Community & Account -->
             <div class="flex items-center gap-3 pointer-events-auto order-2 lg:order-1">
                 <!-- Community Button -->
-                <button id="community-nav-btn" onclick="UI.toggleCommunity()" class="bg-white/70 backdrop-blur-md text-rose-500 border border-white/50 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-white transition-all active:scale-95">
+                <button id="community-nav-btn" onclick="UI.toggleCommunity()"
+                    class="bg-white/70 backdrop-blur-md text-rose-500 border border-white/50 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-white transition-all active:scale-95 hidden">
                     <i data-lucide="compass" size="18"></i>
                     <span class="hidden sm:inline text-sm" id="community-nav-label">灵感社区</span>
-                </button>
-                
-                <!-- Account Button -->
-                <button onclick="UI.toggleAccount()" class="bg-white/70 backdrop-blur-md text-blue-500 border border-white/50 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg hover:bg-white transition-all active:scale-95" id="nav-account-btn">
-                    <i data-lucide="user" size="18"></i>
-                    <span class="hidden sm:inline text-sm" id="nav-account-text">登录</span>
                 </button>
             </div>
 
             <!-- Row 1 (Mobile) / Right (PC): Export Menu -->
             <div id="export-menu-container" class="relative shrink-0 pointer-events-auto order-1 lg:order-2">
                 <button class="export-btn group" onclick="UI.toggleExportMenu()">
-                    <div class="bg-amber-500 text-amber-950 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg shadow-amber-500/20 group-hover:bg-amber-400 transition-all active:scale-95">
+                    <div
+                        class="bg-amber-500 text-amber-950 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black flex items-center gap-2 shadow-lg shadow-amber-500/20 group-hover:bg-amber-400 transition-all active:scale-95">
                         <i data-lucide="share-2" size="18"></i>
                         <span class="inline text-sm">作品导出</span>
                     </div>
@@ -79,27 +82,35 @@
                     <div class="p-2 border-b border-gray-100 mb-1">
                         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">选择格式</span>
                     </div>
-                <div class="export-item" onclick="App.exportModel('obj')">
-                    <div class="flex flex-col">
-                        <span class="font-bold">OBJ 模型</span>
-                        <span class="text-[9px] opacity-60">通用 3D 交换格式</span>
+                    <div class="export-item" onclick="App.exportModel('obj')">
+                        <div class="flex flex-col">
+                            <span class="font-bold">OBJ 模型</span>
+                            <span class="text-[9px] opacity-60">通用 3D 交换格式</span>
+                        </div>
+                        <i data-lucide="box" size="14" class="text-blue-500"></i>
                     </div>
-                    <i data-lucide="box" size="14" class="text-blue-500"></i>
-                </div>
-                <div class="export-item" onclick="App.exportModel('stl')">
-                    <div class="flex flex-col">
-                        <span class="font-bold">STL 打印</span>
-                        <span class="text-[9px] opacity-60">高精度 3D 打印标准</span>
+                    <div class="export-item" onclick="App.exportModel('stl')">
+                        <div class="flex flex-col">
+                            <span class="font-bold">STL 打印</span>
+                            <span class="text-[9px] opacity-60">高精度 3D 打印标准</span>
+                        </div>
+                        <i data-lucide="printer" size="14" class="text-emerald-500"></i>
                     </div>
-                    <i data-lucide="printer" size="14" class="text-emerald-500"></i>
-                </div>
-                <div class="export-item" onclick="App.exportModel('bambu')">
-                    <div class="flex flex-col">
-                        <span class="text-orange-600 font-bold">拓竹 3MF</span>
-                        <span class="text-[9px] text-orange-400">一键切片与打印</span>
+                    <div class="export-item" onclick="App.exportModel('bambu')">
+                        <div class="flex flex-col">
+                            <span class="text-orange-600 font-bold">拓竹 3MF</span>
+                            <span class="text-[9px] text-orange-400">一键切片与打印</span>
+                        </div>
+                        <i data-lucide="zap" size="14" class="text-orange-500 animate-pulse"></i>
                     </div>
-                    <i data-lucide="zap" size="14" class="text-orange-500 animate-pulse"></i>
                 </div>
+            </div>
+            <div id="diy-workspace-actions" class="hidden items-center gap-2 pointer-events-auto order-1 lg:order-2">
+                <button onclick="UI.saveCurrentProject()"
+                    class="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-emerald-500 text-white font-black text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 transition-all active:scale-95">
+                    <i data-lucide="save" size="18"></i>
+                    <span>保存作品</span>
+                </button>
             </div>
         </div>
     </header>
@@ -107,31 +118,41 @@
     <!-- 3D Canvas Container -->
     <div id="canvas-container" class="relative">
         <div id="studio-atmosphere" class="absolute inset-0 pointer-events-none z-[1]">
-            <div class="absolute inset-x-0 top-0 h-[28vh] bg-gradient-to-b from-white/30 via-white/10 to-transparent"></div>
+            <div class="absolute inset-x-0 top-0 h-[28vh] bg-gradient-to-b from-white/30 via-white/10 to-transparent">
+            </div>
             <div class="absolute -left-24 top-20 w-72 h-72 rounded-full bg-amber-300/20 blur-3xl"></div>
             <div class="absolute right-[-60px] top-32 w-80 h-80 rounded-full bg-orange-300/15 blur-3xl"></div>
-            <div class="absolute left-1/2 bottom-[-120px] -translate-x-1/2 w-[70vw] h-56 rounded-full bg-slate-900/10 blur-3xl"></div>
+            <div
+                class="absolute left-1/2 bottom-[-120px] -translate-x-1/2 w-[70vw] h-56 rounded-full bg-slate-900/10 blur-3xl">
+            </div>
         </div>
         <!-- Left Side Controls (Carousel & Reset Button) -->
-        <div id="left-controls-container" class="absolute top-20 lg:top-28 left-4 lg:left-8 z-[50] flex items-start gap-4 pointer-events-none">
+        <div id="left-controls-container"
+            class="absolute top-20 lg:top-28 left-4 lg:left-8 z-[50] flex items-start gap-4 pointer-events-none">
             <!-- Image Carousel -->
             <div id="image-carousel" class="w-28 lg:w-44 pointer-events-auto shrink-0">
-                <div class="relative w-full aspect-[4/5] bg-white/20 backdrop-blur-xl rounded-[2rem] border border-white/30 shadow-2xl overflow-hidden group/carousel">
+                <div
+                    class="relative w-full aspect-[4/5] bg-white/20 backdrop-blur-xl rounded-[2rem] border border-white/30 shadow-2xl overflow-hidden group/carousel">
                     <div id="carousel-slides" class="flex transition-transform duration-500 ease-out h-full">
-                        <div class="w-full h-full shrink-0 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center px-4 text-center">
+                        <div
+                            class="w-full h-full shrink-0 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center px-4 text-center">
                             <div class="space-y-2">
-                                <p class="text-[10px] font-black tracking-[0.35em] text-amber-500 uppercase">Heritage Display</p>
+                                <p class="text-[10px] font-black tracking-[0.35em] text-amber-500 uppercase">Heritage
+                                    Display</p>
                                 <p class="text-sm font-black text-slate-800">社区轮播图加载中</p>
-                                <p class="text-[11px] leading-relaxed text-slate-500">如后台尚未上传轮播图，这里会保留安全占位，不再引用缺失的静态图片。</p>
+                                <p class="text-[11px] leading-relaxed text-slate-500">如后台尚未上传轮播图，这里会保留安全占位，不再引用缺失的静态图片。
+                                </p>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Navigation Arrows -->
-                    <button onclick="Carousel.prev()" class="hidden lg:block absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-opacity">
+                    <button onclick="Carousel.prev()"
+                        class="hidden lg:block absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-opacity">
                         <i data-lucide="chevron-left" size="16"></i>
                     </button>
-                    <button onclick="Carousel.next()" class="hidden lg:block absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-opacity">
+                    <button onclick="Carousel.next()"
+                        class="hidden lg:block absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full opacity-0 group-hover/carousel:opacity-100 transition-opacity">
                         <i data-lucide="chevron-right" size="16"></i>
                     </button>
 
@@ -143,20 +164,28 @@
             </div>
 
             <!-- Camera Reset Button -->
-            <button id="reset-view-btn" onclick="App.resetCamera()" class="p-3 bg-slate-200/60 backdrop-blur-xl border border-slate-300/40 rounded-full text-orange-400 hover:bg-slate-300/80 transition-all shadow-xl shadow-black/5 group active:scale-95 flex items-center gap-2 justify-center pointer-events-auto" title="视角复位">
-                <i data-lucide="refresh-ccw" size="16" class="group-active:rotate-180 transition-transform duration-500"></i>
-                <span class="hidden lg:inline text-[11px] font-bold tracking-widest uppercase leading-none text-orange-400">视角复位</span>
+            <button id="reset-view-btn" onclick="App.resetCamera()"
+                class="p-3 bg-slate-200/60 backdrop-blur-xl border border-slate-300/40 rounded-full text-orange-400 hover:bg-slate-300/80 transition-all shadow-xl shadow-black/5 group active:scale-95 flex items-center gap-2 justify-center pointer-events-auto"
+                title="视角复位">
+                <i data-lucide="refresh-ccw" size="16"
+                    class="group-active:rotate-180 transition-transform duration-500"></i>
+                <span
+                    class="hidden lg:inline text-[11px] font-bold tracking-widest uppercase leading-none text-orange-400">视角复位</span>
             </button>
         </div>
-        
+
         <!-- PC端手势预览和提示 (左下角) -->
         <div class="absolute left-8 bottom-8 pointer-events-auto hidden lg:flex flex-col items-center gap-3 z-[50]">
-            <div id="gesture-preview-container" class="relative w-44 aspect-[4/3] bg-black/30 backdrop-blur-md rounded-2xl border border-white/30 shadow-2xl overflow-hidden group/preview">
-                <video id="input-video" playsinline muted class="w-full h-full object-cover scale-x-[-1] opacity-60 group-hover/preview:opacity-100 transition-opacity duration-500"></video>
-                <canvas id="output-canvas" class="absolute inset-0 w-full h-full scale-x-[-1] pointer-events-none"></canvas>
+            <div id="gesture-preview-container"
+                class="relative w-44 aspect-[4/3] bg-black/30 backdrop-blur-md rounded-2xl border border-white/30 shadow-2xl overflow-hidden group/preview">
+                <video id="input-video" playsinline muted
+                    class="w-full h-full object-cover scale-x-[-1] opacity-60 group-hover/preview:opacity-100 transition-opacity duration-500"></video>
+                <canvas id="output-canvas"
+                    class="absolute inset-0 w-full h-full scale-x-[-1] pointer-events-none"></canvas>
             </div>
             <!-- Gesture Hint Text -->
-            <div id="gesture-hint" class="px-4 py-2 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full text-white/90 text-[10px] font-bold tracking-[0.2em] uppercase flex items-center gap-2 shadow-xl opacity-0 translate-y-2 transition-all duration-500">
+            <div id="gesture-hint"
+                class="px-4 py-2 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full text-white/90 text-[10px] font-bold tracking-[0.2em] uppercase flex items-center gap-2 shadow-xl opacity-0 translate-y-2 transition-all duration-500">
                 <i data-lucide="sparkles" size="12" class="text-amber-400"></i>
                 <span id="gesture-hint-text">等待手势识别...</span>
             </div>
@@ -164,7 +193,8 @@
     </div>
 
     <!-- Loading UI -->
-    <div id="loading-overlay" class="fixed inset-0 bg-gradient-to-br from-amber-50 to-orange-100 z-[500] flex flex-col items-center justify-center transition-opacity duration-500">
+    <div id="loading-overlay"
+        class="fixed inset-0 bg-gradient-to-br from-amber-50 to-orange-100 z-[500] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="flex flex-col items-center gap-8">
             <div class="flex flex-col items-center gap-3">
                 <h2 class="text-3xl font-bold text-amber-900">正在准备面团</h2>
@@ -179,20 +209,25 @@
     </div>
 
     <!-- Steaming UI -->
-    <div id="steam-label" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] flex flex-col items-center pointer-events-none">
-        <div class="px-10 py-8 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl text-white font-bold text-center">
+    <div id="steam-label"
+        class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] flex flex-col items-center pointer-events-none">
+        <div
+            class="px-10 py-8 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl text-white font-bold text-center">
             <span class="animate-pulse text-6xl block mb-3">♨️</span>
             <span class="text-2xl tracking-widest text-shadow-lg">蒸制中...</span>
         </div>
     </div>
 
     <!-- Game Over Panel -->
-    <div id="game-over-panel" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-8">
-        <div class="bg-white p-10 rounded-[2rem] shadow-2xl flex flex-col items-center gap-6 max-w-sm text-center border-4 border-amber-400">
+    <div id="game-over-panel"
+        class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-8">
+        <div
+            class="bg-white p-10 rounded-[2rem] shadow-2xl flex flex-col items-center gap-6 max-w-sm text-center border-4 border-amber-400">
             <h2 class="text-3xl font-bold text-gray-900">巧夺天工</h2>
             <p class="text-gray-600">师傅这手艺，绝了！</p>
             <div class="flex flex-col w-full gap-3">
-                <button onclick="App.exportModel('stl')" class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold hover:bg-orange-600 transition-colors flex items-center justify-center gap-2">
+                <button onclick="App.exportModel('stl')"
+                    class="w-full py-4 bg-orange-500 text-white rounded-2xl font-bold hover:bg-orange-600 transition-colors flex items-center justify-center gap-2">
                     <i data-lucide="printer" size="18"></i> 导出打印模型
                 </button>
                 <button onclick="App.resetApp()" class="w-full py-3 text-gray-400 font-medium">再起一屉</button>
@@ -201,24 +236,30 @@
     </div>
 
     <!-- Master Consultation Dialog -->
-    <div id="master-dialog-overlay" class="fixed inset-0 bg-black/20 backdrop-blur-md z-[300] hidden opacity-0 transition-opacity duration-300" onclick="UI.toggleMasterDialog()"></div>
-    <div id="master-dialog" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[85vw] max-w-lg bg-white rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.4)] border border-amber-100 z-[350] hidden opacity-0 scale-90 transition-all duration-300 overflow-hidden">
+    <div id="master-dialog-overlay"
+        class="fixed inset-0 bg-black/20 backdrop-blur-md z-[300] hidden opacity-0 transition-opacity duration-300"
+        onclick="UI.toggleMasterDialog()"></div>
+    <div id="master-dialog"
+        class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[85vw] max-w-lg bg-white rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.4)] border border-amber-100 z-[350] hidden opacity-0 scale-90 transition-all duration-300 overflow-hidden">
         <div class="relative p-10 flex flex-col items-center text-center gap-6">
-            <button onclick="UI.toggleMasterDialog()" class="absolute top-6 right-6 p-2 text-gray-300 hover:text-amber-600 transition-colors">
+            <button onclick="UI.toggleMasterDialog()"
+                class="absolute top-6 right-6 p-2 text-gray-300 hover:text-amber-600 transition-colors">
                 <i data-lucide="x" size="20"></i>
             </button>
-            
-            <div class="w-28 h-28 bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl flex items-center justify-center text-amber-950 shadow-2xl shadow-amber-500/20 rotate-3">
+
+            <div
+                class="w-28 h-28 bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl flex items-center justify-center text-amber-950 shadow-2xl shadow-amber-500/20 rotate-3">
                 <i data-lucide="chef-hat" size="56"></i>
             </div>
-            
+
             <div class="flex flex-col gap-1">
                 <h2 class="text-2xl font-black text-slate-900 leading-tight">大师传艺点拨</h2>
             </div>
 
             <div class="w-full bg-slate-50/80 rounded-2xl p-6 border border-slate-100 relative min-h-[140px]">
                 <i data-lucide="quote" class="absolute top-4 left-4 text-amber-200/50" size="32"></i>
-                <p id="master-speech-content" class="text-slate-600 leading-relaxed font-medium text-sm sm:text-base relative z-10 text-left">
+                <p id="master-speech-content"
+                    class="text-slate-600 leading-relaxed font-medium text-sm sm:text-base relative z-10 text-left">
                     根据您的面塑作品进行技法分析...
                 </p>
                 <div id="master-thinking-dots" class="hidden absolute bottom-4 right-6 flex gap-1">
@@ -228,30 +269,38 @@
                 </div>
             </div>
 
-            <button onclick="Master.askMaster()" class="w-full py-5 bg-amber-500 text-amber-950 rounded-[1.5rem] font-black text-sm uppercase tracking-widest hover:bg-amber-400 active:scale-95 transition-all shadow-xl shadow-amber-500/10 flex items-center justify-center gap-2">
+            <button onclick="Master.askMaster()"
+                class="w-full py-5 bg-amber-500 text-amber-950 rounded-[1.5rem] font-black text-sm uppercase tracking-widest hover:bg-amber-400 active:scale-95 transition-all shadow-xl shadow-amber-500/10 flex items-center justify-center gap-2">
                 <i data-lucide="sparkles" size="18"></i> 请求新的技法指导
             </button>
         </div>
-        <div class="h-1 bg-gradient-to-r from-amber-200 via-orange-200 to-amber-200 w-full animate-gradient-x opacity-50"></div>
+        <div
+            class="h-1 bg-gradient-to-r from-amber-200 via-orange-200 to-amber-200 w-full animate-gradient-x opacity-50">
+        </div>
     </div>
 
 
 
     <!-- Model Selection Dialog -->
-    <div id="model-dialog-overlay" class="fixed inset-0 bg-black/20 backdrop-blur-md z-[400] hidden opacity-0 transition-opacity duration-300" onclick="UI.toggleModelDialog()"></div>
-    <div id="model-dialog" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-2xl bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.4)] border border-amber-100 z-[450] hidden opacity-0 scale-90 transition-all duration-300 overflow-hidden">
+    <div id="model-dialog-overlay"
+        class="fixed inset-0 bg-black/20 backdrop-blur-md z-[400] hidden opacity-0 transition-opacity duration-300"
+        onclick="UI.toggleModelDialog()"></div>
+    <div id="model-dialog"
+        class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-2xl bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.4)] border border-amber-100 z-[450] hidden opacity-0 scale-90 transition-all duration-300 overflow-hidden">
         <div class="p-8 flex flex-col gap-6">
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-2xl font-black text-slate-900">选择面团造型</h2>
                     <p class="text-sm text-slate-500 font-medium">挑选一个初始形状开始创作</p>
                 </div>
-                <button onclick="UI.toggleModelDialog()" class="p-2 text-gray-300 hover:text-amber-600 transition-colors">
+                <button onclick="UI.toggleModelDialog()"
+                    class="p-2 text-gray-300 hover:text-amber-600 transition-colors">
                     <i data-lucide="x" size="24"></i>
                 </button>
             </div>
-            
-            <div id="model-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto p-2 scrollbar-hide">
+
+            <div id="model-grid"
+                class="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto p-2 scrollbar-hide">
                 <!-- Models will be injected here -->
                 <div class="animate-pulse flex flex-col gap-2">
                     <div class="aspect-square bg-slate-100 rounded-3xl"></div>
@@ -262,8 +311,11 @@
     </div>
 
     <!-- Mobile Settings Drawer -->
-    <div id="mobile-drawer-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] hidden lg:hidden opacity-0 transition-opacity duration-300" onclick="UI.toggleMobileDrawer()"></div>
-    <div id="mobile-drawer" class="fixed bottom-0 inset-x-0 bg-white z-[250] lg:hidden translate-y-full transition-transform duration-500 ease-out rounded-t-[2.5rem] shadow-[0_-20px_60px_rgba(0,0,0,0.3)] flex flex-col max-h-[80vh]">
+    <div id="mobile-drawer-overlay"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] hidden lg:hidden opacity-0 transition-opacity duration-300"
+        onclick="UI.toggleMobileDrawer()"></div>
+    <div id="mobile-drawer"
+        class="fixed bottom-0 inset-x-0 bg-white z-[250] lg:hidden translate-y-full transition-transform duration-500 ease-out rounded-t-[2.5rem] shadow-[0_-20px_60px_rgba(0,0,0,0.3)] flex flex-col max-h-[80vh]">
         <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto my-3 shrink-0" onclick="UI.toggleMobileDrawer()"></div>
         <div class="flex-1 overflow-y-auto px-5 pb-10 scrollbar-hide">
             <!-- Reuse same content sections but optimized for mobile -->
@@ -272,22 +324,27 @@
     </div>
 
     <!-- Main Control Sidebar -->
-    <aside id="main-sidebar" class="right-panel fixed right-6 top-28 bottom-8 w-[320px] hidden lg:flex flex-col gap-4 pointer-events-none">
+    <aside id="main-sidebar"
+        class="right-panel fixed right-6 top-28 bottom-8 w-[320px] hidden lg:flex flex-col gap-4 pointer-events-none">
         <!-- Master Consultation Component (PC) -->
-        <button onclick="UI.toggleMasterDialog()" class="pointer-events-auto w-full p-4 bg-amber-50 text-amber-600 rounded-[1.5rem] border border-amber-100 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3 group">
+        <button onclick="UI.toggleMasterDialog()"
+            class="pointer-events-auto w-full p-4 bg-amber-50 text-amber-600 rounded-[1.5rem] border border-amber-100 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3 group">
             <div class="relative">
                 <i data-lucide="chef-hat" size="24"></i>
-                <div class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full animate-pulse"></div>
+                <div
+                    class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full animate-pulse">
+                </div>
             </div>
             <span class="font-black text-sm tracking-widest uppercase">大师传艺点拨</span>
         </button>
 
         <!-- Tools Card -->
-        <section class="pointer-events-auto flex-1 bg-white/95 backdrop-blur-xl rounded-[2rem] p-5 shadow-2xl border border-white flex flex-col overflow-hidden">
+        <section
+            class="pointer-events-auto flex-1 bg-white/95 backdrop-blur-xl rounded-[2rem] p-5 shadow-2xl border border-white flex flex-col overflow-hidden">
             <div class="flex items-center justify-between mb-5">
                 <h2 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">五彩面团 · 调色盘</h2>
             </div>
-            
+
             <div class="flex-1 overflow-y-auto pr-2 space-y-5 scrollbar-hide">
                 <!-- Color Groups -->
                 <div class="space-y-4">
@@ -296,11 +353,13 @@
                             <span class="w-1 h-1 bg-red-500 rounded-full"></span> 喜庆祥瑞 · 红
                         </h3>
                         <div class="grid grid-cols-2 gap-2">
-                            <button onclick="App.applyPresetColor('#b91c1c')" class="color-card group/card bg-red-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-red-200 flex items-center gap-3 transition-all">
+                            <button onclick="App.applyPresetColor('#b91c1c')"
+                                class="color-card group/card bg-red-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-red-200 flex items-center gap-3 transition-all">
                                 <div class="w-8 h-8 rounded-xl shadow-lg rotate-3" style="background:#b91c1c"></div>
                                 <span class="text-xs font-bold text-red-950">红曲米</span>
                             </button>
-                            <button onclick="App.applyPresetColor('#f97316')" class="color-card group/card bg-orange-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-orange-200 flex items-center gap-3 transition-all">
+                            <button onclick="App.applyPresetColor('#f97316')"
+                                class="color-card group/card bg-orange-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-orange-200 flex items-center gap-3 transition-all">
                                 <div class="w-8 h-8 rounded-xl shadow-lg -rotate-3" style="background:#f97316"></div>
                                 <span class="text-xs font-bold text-orange-950">胡萝卜</span>
                             </button>
@@ -312,11 +371,13 @@
                             <span class="w-1 h-1 bg-amber-500 rounded-full"></span> 岁丰年稔 · 黄
                         </h3>
                         <div class="grid grid-cols-2 gap-2">
-                            <button onclick="App.applyPresetColor('#fbbf24')" class="color-card bg-amber-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-amber-200 flex items-center gap-3 transition-all">
+                            <button onclick="App.applyPresetColor('#fbbf24')"
+                                class="color-card bg-amber-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-amber-200 flex items-center gap-3 transition-all">
                                 <div class="w-8 h-8 rounded-xl shadow-lg rotate-3" style="background:#fbbf24"></div>
                                 <span class="text-xs font-bold text-amber-950">老南瓜</span>
                             </button>
-                            <button onclick="App.applyPresetColor('#fef3c7')" class="color-card bg-yellow-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-amber-200 flex items-center gap-3 transition-all">
+                            <button onclick="App.applyPresetColor('#fef3c7')"
+                                class="color-card bg-yellow-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-amber-200 flex items-center gap-3 transition-all">
                                 <div class="w-8 h-8 rounded-xl shadow-lg -rotate-3" style="background:#fef3c7"></div>
                                 <span class="text-xs font-bold text-yellow-950">大黄米</span>
                             </button>
@@ -328,11 +389,13 @@
                             <span class="w-1 h-1 bg-emerald-500 rounded-full"></span> 万物生长 · 绿
                         </h3>
                         <div class="grid grid-cols-2 gap-2">
-                            <button onclick="App.applyPresetColor('#15803d')" class="color-card bg-emerald-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-emerald-200 flex items-center gap-3 transition-all">
+                            <button onclick="App.applyPresetColor('#15803d')"
+                                class="color-card bg-emerald-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-emerald-200 flex items-center gap-3 transition-all">
                                 <div class="w-8 h-8 rounded-xl shadow-lg rotate-3" style="background:#15803d"></div>
                                 <span class="text-xs font-bold text-emerald-950">菠菜汁</span>
                             </button>
-                            <button onclick="App.applyPresetColor('#86efac')" class="color-card bg-green-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-emerald-200 flex items-center gap-3 transition-all">
+                            <button onclick="App.applyPresetColor('#86efac')"
+                                class="color-card bg-green-50/50 p-3 rounded-2xl border-2 border-transparent hover:border-emerald-200 flex items-center gap-3 transition-all">
                                 <div class="w-8 h-8 rounded-xl shadow-lg -rotate-3" style="background:#86efac"></div>
                                 <span class="text-xs font-bold text-green-950">青豆泥</span>
                             </button>
@@ -347,114 +410,129 @@
                 </div>
             </div>
 
-            <button onclick="App.startSteaming(); UI.toggleMobileDrawer()" class="mt-6 w-full py-5 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-[1.5rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-orange-600/30 hover:shadow-orange-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3">
+            <button onclick="App.startSteaming(); UI.toggleMobileDrawer()"
+                class="mt-6 w-full py-5 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-[1.5rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-orange-600/30 hover:shadow-orange-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3">
                 <i data-lucide="flame" size="18" class="animate-bounce"></i> 开启蒸制工序
             </button>
         </section>
     </aside>
 
     <!-- Mobile Navigation Bar (Bottom) -->
-    <nav class="lg:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-2xl z-[150] px-8 py-5 border-t border-gray-100 flex justify-between items-center rounded-t-[2.5rem]">
-        <button onclick="UI.toggleMobileDrawer()" class="p-4 bg-slate-50 text-slate-600 rounded-2xl active:scale-90 transition-transform">
+    <nav
+        class="lg:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-2xl z-[150] px-8 py-5 border-t border-gray-100 flex justify-between items-center rounded-t-[2.5rem]">
+        <button onclick="UI.toggleMobileDrawer()"
+            class="p-4 bg-slate-50 text-slate-600 rounded-2xl active:scale-90 transition-transform">
             <i data-lucide="layers" size="22"></i>
         </button>
 
         <!-- Mobile Gesture Preview (Floating Center) -->
         <div class="absolute left-1/2 -translate-x-1/2 -top-8 flex flex-col items-center gap-0.5">
-            <div id="mobile-gesture-preview" class="relative w-24 h-24 bg-black rounded-full border-4 border-white shadow-2xl overflow-hidden ring-4 ring-amber-500/20">
-                <video id="input-video-mobile" playsinline muted class="w-full h-full object-cover scale-x-[-1]"></video>
-                <canvas id="output-canvas-mobile" class="absolute inset-0 w-full h-full scale-x-[-1] pointer-events-none"></canvas>
+            <div id="mobile-gesture-preview"
+                class="relative w-24 h-24 bg-black rounded-full border-4 border-white shadow-2xl overflow-hidden ring-4 ring-amber-500/20">
+                <video id="input-video-mobile" playsinline muted
+                    class="w-full h-full object-cover scale-x-[-1]"></video>
+                <canvas id="output-canvas-mobile"
+                    class="absolute inset-0 w-full h-full scale-x-[-1] pointer-events-none"></canvas>
             </div>
             <!-- Mobile Gesture Hint -->
-            <div id="mobile-gesture-hint" class="px-3 py-1 text-orange-600 text-xs font-black tracking-widest uppercase opacity-100 transition-opacity duration-300">
+            <div id="mobile-gesture-hint"
+                class="px-3 py-1 text-orange-600 text-xs font-black tracking-widest uppercase opacity-100 transition-opacity duration-300">
                 <span id="mobile-gesture-hint-text">正在识别手势</span>
             </div>
         </div>
-        
+
         <!-- Master Consultation Component (Now in Bottom Nav) -->
-        <button id="assistant-container" onclick="UI.toggleMasterDialog()" class="p-4 bg-amber-50 text-amber-600 rounded-2xl active:scale-90 transition-transform relative">
+        <button id="assistant-container" onclick="UI.toggleMasterDialog()"
+            class="p-4 bg-amber-50 text-amber-600 rounded-2xl active:scale-90 transition-transform relative">
             <i data-lucide="chef-hat" size="22"></i>
-            <div class="absolute top-3 right-3 w-2 h-2 bg-emerald-500 border border-white rounded-full animate-pulse"></div>
+            <div class="absolute top-3 right-3 w-2 h-2 bg-emerald-500 border border-white rounded-full animate-pulse">
+            </div>
         </button>
     </nav>
 
-    <!-- Auth & Account Modal -->
-    <div id="auth-modal-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-md z-[500] hidden opacity-0 transition-opacity duration-300" onclick="UI.toggleAccount()"></div>
-    <div id="auth-modal" class="fixed right-0 top-0 bottom-0 w-full sm:w-[400px] bg-white/95 backdrop-blur-2xl shadow-[-20px_0_60px_rgba(0,0,0,0.2)] z-[550] translate-x-full transition-transform duration-500 ease-out flex flex-col">
-        <div class="flex items-center justify-between p-6 border-b border-gray-100">
-            <h2 class="text-xl font-black text-slate-800" id="auth-modal-title">账号中心</h2>
-            <button onclick="UI.toggleAccount()" class="p-2 text-gray-400 hover:text-slate-800 transition-colors bg-gray-100 rounded-full"><i data-lucide="x" size="20"></i></button>
-        </div>
-        <div class="flex-1 overflow-y-auto p-6 scrollbar-hide" id="auth-modal-content">
-            <!-- Dynamic Content (Login/Register Form OR User Dashboard) injects here -->
-        </div>
-    </div>
-
     <!-- Community Home View -->
-    <div id="community-modal" class="fixed inset-0 bg-gradient-to-br from-[#fffaf4] via-[#fffdf8] to-[#fff4ea] z-[600] translate-y-full transition-transform duration-500 ease-out flex flex-col">
-        <header class="bg-white/85 backdrop-blur-xl shrink-0 px-4 py-4 lg:px-8 lg:py-5 flex items-center justify-between border-b border-amber-100 sticky top-0 z-10 shadow-sm">
-            <div class="flex items-center gap-3 lg:gap-4 min-w-0">
-                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg flex items-center justify-center shrink-0">
+    <div id="community-modal"
+        class="fixed inset-0 bg-gradient-to-br from-[#fffaf4] via-[#fffdf8] to-[#fff4ea] z-[600] translate-y-full transition-transform duration-500 ease-out flex flex-col">
+        <header
+            class="community-dashboard-header bg-white/85 backdrop-blur-xl shrink-0 px-4 py-4 lg:px-8 lg:py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-amber-100 sticky top-0 z-10 shadow-sm">
+            <div class="flex items-center gap-3 lg:gap-4 min-w-0 w-full sm:w-auto">
+                <div
+                    class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg flex items-center justify-center shrink-0">
                     <i data-lucide="sparkles" size="20"></i>
                 </div>
                 <div class="min-w-0">
-                    <p class="text-[10px] lg:text-xs font-black uppercase tracking-[0.35em] text-amber-500 mb-1">Community First</p>
-                    <h2 class="text-xl lg:text-3xl font-black text-slate-800 tracking-tight">灵感发现</h2>
+                    <p class="text-[10px] lg:text-xs font-black uppercase tracking-[0.35em] text-amber-500 mb-1">
+                        Community Hub</p>
+                    <h2 class="text-xl lg:text-3xl font-black text-slate-800 tracking-tight">花饽饽灵感社区</h2>
                 </div>
             </div>
-            <div class="flex items-center gap-2 lg:gap-3 shrink-0">
-                <button onclick="UI.refreshCommunityHome()" class="p-2.5 bg-white text-slate-500 hover:text-rose-600 rounded-full border border-slate-200 transition-colors shadow-sm">
+            <div class="flex items-center gap-2 lg:gap-3 shrink-0 w-full sm:w-auto">
+                <button onclick="UI.refreshCommunityHome()"
+                    class="p-2.5 bg-white text-slate-500 hover:text-rose-600 rounded-full border border-slate-200 transition-colors shadow-sm shrink-0">
                     <i data-lucide="refresh-cw" size="18"></i>
                 </button>
-                <button onclick="UI.showDIYView()" class="px-4 py-2.5 lg:px-5 lg:py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm tracking-wide shadow-lg shadow-orange-500/20 hover:opacity-95 transition-all flex items-center gap-2">
+                <button onclick="UI.showDIYView()"
+                    class="px-4 py-2.5 lg:px-5 lg:py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm tracking-wide shadow-lg shadow-orange-500/20 hover:opacity-95 transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none">
                     <i data-lucide="wand-sparkles" size="18"></i>
-                    <span>进入DIY体验</span>
+                    <span>线上DIY花饽饽</span>
                 </button>
             </div>
         </header>
-        <div class="flex-1 overflow-y-auto scrollbar-hide">
-            <div class="max-w-[1600px] mx-auto px-4 py-4 lg:px-8 lg:py-8 grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-5 lg:gap-8">
-                <aside class="space-y-5">
+        <div class="community-dashboard-body flex-1 overflow-y-auto">
+            <div
+                class="community-dashboard-shell max-w-[1720px] mx-auto px-4 py-4 lg:px-8 lg:py-8 grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-5 lg:gap-8">
+                <aside class="community-sidebar min-h-0 space-y-5">
                     <div id="community-home-profile"></div>
-                    <section class="bg-white/90 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl overflow-hidden">
-                        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+                    <section
+                        class="bg-white/90 backdrop-blur-xl rounded-[2rem] border overflow-hidden community-works-card">
+                        <div
+                            class="px-5 py-4 border-b border-slate-100 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">My Works</p>
-                                <h3 class="text-lg font-black text-slate-800 mt-1">我的作品</h3>
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Personal
+                                    Center</p>
+                                <h3 class="text-lg font-black text-slate-800 mt-1">个人中心作品集</h3>
                             </div>
-                            <button onclick="UI.showDIYView()" class="px-3 py-2 rounded-xl bg-amber-50 text-amber-700 text-xs font-black hover:bg-amber-100 transition-colors">去创作</button>
+                            <button onclick="UI.createNewProject()"
+                                class="px-3 py-2.5 rounded-xl bg-amber-50 text-amber-700 text-sm sm:text-xs font-black hover:bg-amber-100 transition-colors flex items-center justify-center">创建新作品</button>
                         </div>
-                        <div id="community-user-projects-list" class="p-4 space-y-4 max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-hide">
+                        <div id="community-user-projects-list" class="p-4 community-user-projects-panel">
                             <div class="text-center text-slate-400 py-6 text-sm animate-pulse">加载中...</div>
                         </div>
                     </section>
                 </aside>
 
-                <section class="min-w-0 space-y-5">
-                    <div id="community-hero-card" class="relative overflow-hidden bg-white/90 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl px-5 py-5 lg:px-7 lg:py-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-                        <div class="absolute inset-0 pointer-events-none opacity-70 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(249,115,22,0.14),transparent_30%)]"></div>
-                        <div class="absolute right-[-40px] top-[-30px] w-48 h-48 rounded-full border border-amber-200/60 opacity-60"></div>
-                        <div class="absolute right-8 bottom-[-55px] w-36 h-36 rounded-full border border-orange-200/50 opacity-50"></div>
-                        <div>
-                            <p class="text-[10px] font-black uppercase tracking-[0.35em] text-rose-400 mb-2 relative z-10">Inspiration Feed</p>
-                            <h3 class="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight relative z-10">非遗数字展陈中的创作长廊</h3>
-                            <p class="text-sm lg:text-base text-slate-500 mt-2 max-w-3xl relative z-10">这里先看大家如何把花饽饽做成一场视觉陈列。左侧管理你的身份与作品，中间浏览社区灵感，准备好了就切入 DIY 工作台开始创作。</p>
-                            <div class="hidden lg:flex items-center gap-3 mt-5 relative z-10">
-                                <div class="px-3 py-2 rounded-full bg-white/80 border border-amber-100 text-[11px] font-black tracking-[0.25em] text-amber-600 uppercase">作品公开展区</div>
-                                <div class="px-3 py-2 rounded-full bg-white/80 border border-slate-100 text-[11px] font-black tracking-[0.25em] text-slate-500 uppercase">社区优先入口</div>
-                            </div>
-                            <div class="flex lg:hidden gap-2 mt-4">
-                                <button onclick="UI.toggleAccount()" class="flex-1 px-4 py-3 rounded-2xl bg-slate-100 text-slate-700 font-black text-sm">账号面板</button>
-                                <button onclick="UI.showDIYView()" class="flex-1 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm shadow-lg shadow-orange-500/20">去做花饽饽</button>
+                <section class="community-feed-panel min-w-0 min-h-0 space-y-5">
+                    <div id="community-hero-card"
+                        class="relative overflow-hidden bg-white/90 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl px-5 py-4 lg:px-6 lg:py-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+                        <div
+                            class="absolute inset-0 pointer-events-none opacity-70 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(249,115,22,0.14),transparent_30%)]">
+                        </div>
+                        <div
+                            class="absolute right-[-40px] top-[-30px] w-48 h-48 rounded-full border border-amber-200/60 opacity-60">
+                        </div>
+                        <div
+                            class="absolute right-8 bottom-[-55px] w-36 h-36 rounded-full border border-orange-200/50 opacity-50">
+                        </div>
+                        <div class="relative z-10 min-w-0">
+                            <p class="text-[10px] font-black uppercase tracking-[0.35em] text-rose-400 mb-1">Public
+                                Gallery</p>
+                            <h3 class="text-lg lg:text-xl font-black text-slate-900 tracking-tight">花饽饽社区公开作品</h3>
+                            <p class="text-sm text-slate-500 mt-1">浏览大家已发布到社区的花饽饽创作。</p>
+                            <div
+                                class="mt-3 flex lg:hidden items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
+                                <i data-lucide="gallery-vertical-end" size="14"></i>
+                                <span>社区公开作品</span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-[0.25em] relative z-10">
+                        <div
+                            class="hidden lg:flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-[0.25em] relative z-10 shrink-0">
                             <i data-lucide="gallery-vertical-end" size="16"></i>
-                            <span>公开作品</span>
+                            <span>社区公开作品</span>
                         </div>
                     </div>
 
-                    <div id="community-waterfall" class="bg-white/75 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl p-4 lg:p-6">
+                    <div id="community-waterfall"
+                        class="bg-white/75 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl p-4 lg:p-6 community-waterfall-panel">
                         <div class="waterfall-grid" id="community-grid"></div>
                     </div>
                 </section>
@@ -477,35 +555,174 @@
 
         // Pass API Key from environment if needed, or define here
         // Note: For simple refactor we keep it in Master.js or as a var
-        
+
         window.onload = () => {
             App.init();
             Carousel.init();
         };
     </script>
 
+    <div id="app-dialog-overlay"
+        class="fixed inset-0 bg-black/45 backdrop-blur-sm z-[1220] hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0" onclick="UI.dismissDialog()"></div>
+        <div class="min-h-full flex items-center justify-center p-4">
+            <div id="app-dialog"
+                class="relative w-[92vw] max-w-md bg-white/95 backdrop-blur-xl rounded-[2rem] border border-amber-100 shadow-[0_24px_80px_rgba(15,23,42,0.18)] p-6 sm:p-7 hidden opacity-0 scale-95 transition-all duration-300">
+                <button type="button" onclick="UI.dismissDialog()"
+                    class="absolute top-5 right-5 p-2 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors">
+                    <i data-lucide="x" size="18"></i>
+                </button>
+                <div class="flex items-start gap-4 mb-5">
+                    <div id="app-dialog-icon"
+                        class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
+                        <i id="app-dialog-icon-symbol" data-lucide="sparkles" size="22"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p id="app-dialog-kicker"
+                            class="text-[10px] font-black uppercase tracking-[0.32em] text-amber-500 mb-1">System</p>
+                        <h3 id="app-dialog-title" class="text-xl font-black text-slate-900">提示</h3>
+                        <p id="app-dialog-message" class="text-sm text-slate-500 mt-2 leading-relaxed"></p>
+                    </div>
+                </div>
+                <div id="app-dialog-input-wrap" class="hidden mb-5">
+                    <label id="app-dialog-input-label" for="app-dialog-input"
+                        class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">输入内容</label>
+                    <input id="app-dialog-input" type="text" class="auth-input py-3 text-sm text-black" />
+                </div>
+                <div id="app-dialog-actions" class="flex justify-end gap-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="account-settings-overlay"
+        class="fixed inset-0 bg-slate-950/50 backdrop-blur-md z-[1210] hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0" onclick="UI.hideAccountSettings()"></div>
+        <div class="min-h-full flex items-center justify-center p-4 sm:p-6">
+            <div id="account-settings-dialog"
+                class="relative w-[94vw] max-w-2xl bg-white/95 backdrop-blur-xl rounded-[2rem] border border-white shadow-[0_28px_90px_rgba(15,23,42,0.22)] hidden opacity-0 scale-95 transition-all duration-300 overflow-hidden">
+                <button type="button" onclick="UI.hideAccountSettings()"
+                    class="absolute top-5 right-5 z-10 p-2 rounded-full bg-white/80 text-slate-400 hover:text-slate-700 transition-colors shadow-sm">
+                    <i data-lucide="x" size="18"></i>
+                </button>
+                <div
+                    class="px-6 py-6 sm:px-8 sm:py-7 bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 border-b border-amber-100">
+                    <div class="flex items-start gap-4 pr-10">
+                        <div
+                            class="w-14 h-14 rounded-[1.6rem] bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
+                            <i data-lucide="settings-2" size="24"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-black uppercase tracking-[0.32em] text-amber-500 mb-1">Account
+                            </p>
+                            <h3 class="text-2xl font-black text-slate-900">账号设置</h3>
+                            <p class="text-sm text-slate-500 mt-2 leading-relaxed">在这里统一修改艺名和登录密码。若不需要改密码，可将密码区域留空。</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-6 sm:px-8 sm:py-7 space-y-5">
+                    <div class="grid gap-5 lg:grid-cols-2">
+                        <section class="rounded-[1.6rem] border border-slate-100 bg-white shadow-sm p-5">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div
+                                    class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                    <i data-lucide="badge-pen" size="18"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-black text-slate-800">艺名设置</h4>
+                                    <p class="text-xs text-slate-500 mt-0.5">社区展示和个人资料都会同步更新。</p>
+                                </div>
+                            </div>
+                            <label for="account-settings-username"
+                                class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">新的艺名</label>
+                            <input id="account-settings-username" type="text" class="auth-input py-3 text-sm text-black"
+                                placeholder="输入新的艺名" autocomplete="username">
+                        </section>
+                        <section class="rounded-[1.6rem] border border-slate-100 bg-slate-50/80 shadow-sm p-5">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div
+                                    class="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shrink-0">
+                                    <i data-lucide="lock-keyhole" size="18"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-black text-slate-800">密码设置</h4>
+                                    <p class="text-xs text-slate-500 mt-0.5">修改密码时请填写完整，至少 6 位。</p>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div>
+                                    <label for="account-settings-current-password"
+                                        class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">当前密码</label>
+                                    <input id="account-settings-current-password" type="password"
+                                        class="auth-input py-3 text-sm text-black" placeholder="输入当前密码"
+                                        autocomplete="current-password">
+                                </div>
+                                <div>
+                                    <label for="account-settings-new-password"
+                                        class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">新密码</label>
+                                    <input id="account-settings-new-password" type="password"
+                                        class="auth-input py-3 text-sm text-black" placeholder="输入新的登录密码"
+                                        autocomplete="new-password">
+                                </div>
+                                <div>
+                                    <label for="account-settings-confirm-password"
+                                        class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">确认新密码</label>
+                                    <input id="account-settings-confirm-password" type="password"
+                                        class="auth-input py-3 text-sm text-black" placeholder="再次输入新密码"
+                                        autocomplete="new-password">
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-1">
+                        <button type="button" onclick="UI.hideAccountSettings()"
+                            class="px-5 py-3 rounded-2xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-colors">取消</button>
+                        <button type="button" onclick="UI.submitAccountSettings()"
+                            class="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black shadow-lg shadow-orange-500/20 hover:opacity-95 transition-all">保存设置</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Entry Login Overlay -->
-    <div id="entry-login-overlay" class="fixed inset-0 flex items-center justify-center hidden opacity-0 transition-all duration-1000 z-[1000]">
-        <div id="entry-login-card" class="login-card w-[88vw] max-w-[360px] rounded-[2rem] py-5 px-6 sm:py-7 sm:px-8 flex flex-col gap-4 scale-90 opacity-0 translate-y-8 transition-all duration-700 pointer-events-none">
+    <div id="entry-login-overlay"
+        class="fixed inset-0 flex items-center justify-center hidden opacity-0 transition-all duration-1000 z-[1000]">
+        <div id="entry-login-card"
+            class="login-card w-[88vw] max-w-[360px] rounded-[2rem] py-5 px-6 sm:py-7 sm:px-8 flex flex-col gap-4 scale-90 opacity-0 translate-y-8 transition-all duration-700 pointer-events-none">
             <div class="flex justify-center border-b border-slate-100">
-                <button onclick="UI.setEntryTab('login')" id="tab-login" class="login-tab active py-2 text-xs">登录账号</button>
-                <button onclick="UI.setEntryTab('register')" id="tab-register" class="login-tab py-2 text-xs">注册新禧</button>
+                <button onclick="UI.setEntryTab('login')" id="tab-login"
+                    class="login-tab active py-2 text-xs">登录账号</button>
+                <button onclick="UI.setEntryTab('register')" id="tab-register"
+                    class="login-tab py-2 text-xs">注册新禧</button>
             </div>
 
             <div id="entry-auth-form" class="space-y-4">
                 <div>
-                    <label class="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5 px-1">艺名 / 用户名</label>
-                    <input id="entry-username" type="text" class="auth-input py-2.5 text-sm text-black" placeholder="输入您的昵称">
+                    <label id="entry-username-label"
+                        class="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5 px-1">艺名 /
+                        用户名 / 邮箱</label>
+                    <input id="entry-username" type="text" class="auth-input py-2.5 text-sm text-black"
+                        placeholder="输入艺名或邮箱">
+                </div>
+                <div id="entry-email-field" class="hidden">
+                    <label
+                        class="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5 px-1">邮箱（选填）</label>
+                    <input id="entry-email" type="email" class="auth-input py-2.5 text-sm text-black"
+                        placeholder="用于邮箱登录">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5 px-1">暗号 / 密码</label>
-                    <input id="entry-password" type="password" class="auth-input py-2.5 text-sm text-black" placeholder="输入密码">
+                    <label class="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5 px-1">暗号 /
+                        密码</label>
+                    <input id="entry-password" type="password" class="auth-input py-2.5 text-sm text-black"
+                        placeholder="输入密码">
                 </div>
                 <div class="pt-2">
-                    <button onclick="UI.submitEntryAuth()" id="entry-submit-btn" class="auth-btn py-3 text-sm">开启艺术之旅</button>
+                    <button onclick="UI.submitEntryAuth()" id="entry-submit-btn"
+                        class="auth-btn py-3 text-sm">开启艺术之旅</button>
                 </div>
             </div>
         </div>
     </div>
 </body>
+
 </html>

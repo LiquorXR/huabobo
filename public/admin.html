@@ -11,6 +11,185 @@
     <script src="lib/three/GLTFLoader.js"></script>
     <script src="lib/three/OBJLoader.js"></script>
     <script src="lib/three/DRACOLoader.js"></script>
+    <style>
+        @media (max-width: 767px) {
+            #dash-view {
+                flex-direction: column;
+                height: 100dvh;
+            }
+
+            #dash-view > aside {
+                width: 100%;
+                flex: 0 0 auto;
+                border-bottom-left-radius: 1.5rem;
+                border-bottom-right-radius: 1.5rem;
+                box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+            }
+
+            #dash-view > aside > div:first-child {
+                padding: max(1rem, env(safe-area-inset-top)) 1rem 0.75rem;
+            }
+
+            #dash-view > aside nav {
+                display: flex;
+                gap: 0.625rem;
+                overflow-x: auto;
+                padding: 0 1rem 1rem;
+                white-space: nowrap;
+                scrollbar-width: none;
+            }
+
+            #dash-view > aside nav::-webkit-scrollbar {
+                display: none;
+            }
+
+            #dash-view > aside nav button {
+                width: auto;
+                flex: 0 0 auto;
+                padding: 0.85rem 1rem;
+                border-radius: 999px;
+                font-size: 0.875rem;
+            }
+
+            #dash-view > aside > div:last-child {
+                padding: 0 1rem max(1rem, env(safe-area-inset-bottom));
+                border-top: 0;
+            }
+
+            #dash-view > aside > div:last-child button {
+                border-radius: 999px;
+            }
+
+            #dash-view > main {
+                padding: 1rem 0.875rem calc(1.25rem + env(safe-area-inset-bottom));
+            }
+
+            #dash-view > main > header {
+                margin-bottom: 1rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.625rem;
+            }
+
+            #view-title {
+                font-size: 1.75rem;
+                line-height: 1.1;
+            }
+
+            #view-actions {
+                width: 100%;
+            }
+
+            #content-dashboard > .grid {
+                gap: 0.875rem;
+                margin-bottom: 1rem;
+            }
+
+            #content-dashboard > .grid > div,
+            #content-dashboard > div.bg-white,
+            #content-projects > div,
+            #content-users > div,
+            #content-resources > div {
+                border-radius: 1.25rem;
+            }
+
+            #content-projects > div,
+            #content-users > div,
+            #content-resources > div {
+                padding: 0;
+            }
+
+            #content-dashboard > .grid > div {
+                padding: 1rem;
+            }
+
+            #content-dashboard > .grid > div h3 {
+                font-size: 1.75rem;
+            }
+
+            #content-dashboard > .grid > div > div:last-child {
+                width: 2.75rem;
+                height: 2.75rem;
+            }
+
+            #content-dashboard canvas {
+                max-height: 260px;
+            }
+
+            #content-projects table,
+            #content-users table,
+            #content-resources table {
+                min-width: 640px;
+            }
+
+            #content-projects .overflow-x-auto,
+            #content-users .overflow-x-auto,
+            #content-resources .overflow-x-auto {
+                margin-left: -0.25rem;
+                margin-right: -0.25rem;
+                padding-left: 0.25rem;
+                padding-right: 0.25rem;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #content-projects th,
+            #content-projects td,
+            #content-users th,
+            #content-users td,
+            #content-resources th,
+            #content-resources td {
+                padding-left: 1rem;
+                padding-right: 1rem;
+                white-space: nowrap;
+            }
+
+            #content-resources {
+                gap: 1rem;
+            }
+
+            #content-resources > div > div:first-child {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.875rem;
+                margin-bottom: 1rem;
+            }
+
+            #content-resources > div > div:first-child button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            #upload-modal {
+                padding: 1rem;
+            }
+
+            #upload-modal > div {
+                max-height: calc(100dvh - 2rem);
+                overflow-y: auto;
+                padding: 1.25rem;
+                border-radius: 1.75rem;
+            }
+
+            #upload-form .flex.gap-4.mt-8 {
+                flex-direction: column-reverse;
+                gap: 0.75rem;
+                margin-top: 1.25rem;
+            }
+
+            #admin-dialog {
+                padding: 1.5rem;
+                border-radius: 1.75rem;
+            }
+
+            #admin-dialog-actions {
+                flex-direction: column-reverse;
+            }
+
+            #admin-dialog-actions button {
+                width: 100%;
+            }
+        }
+    </style>
 
 </head>
 <body class="bg-gray-50 text-slate-800">
@@ -28,6 +207,12 @@
             <button onclick="switchTab('resources')" id="nav-resources" class="w-full flex items-center gap-3 hover:bg-slate-800 px-4 py-3 rounded-xl transition text-slate-300"><i data-lucide="folder-tree"></i> 资源管理</button>
 
         </nav>
+        <div class="p-4 border-t border-slate-800">
+            <button onclick="logoutAdmin()" class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/20 transition-all font-bold">
+                <i data-lucide="log-out"></i>
+                <span>退出登录</span>
+            </button>
+        </div>
     </aside>
 
     <!-- Main -->
@@ -74,6 +259,7 @@
         <!-- Projects View (Hidden by default) -->
         <div id="content-projects" class="hidden">
             <div class="bg-white border text-left border-gray-100 shadow-sm rounded-2xl overflow-hidden flex flex-col">
+                <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm text-gray-600">
                     <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                         <tr>
@@ -88,12 +274,14 @@
                     <tbody id="projects-table-body" class="divide-y divide-gray-100">
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
 
         <!-- Users View (Hidden by default) -->
         <div id="content-users" class="hidden">
             <div class="bg-white border text-left border-gray-100 shadow-sm rounded-2xl overflow-hidden flex flex-col">
+                <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm text-gray-600">
                     <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                         <tr>
@@ -107,6 +295,7 @@
                     <tbody id="users-table-body" class="divide-y divide-gray-100">
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
         <!-- Resources View (Hidden by default) -->
@@ -188,6 +377,28 @@
                 </form>
             </div>
         </div>
+
+        <div id="admin-dialog-overlay" class="fixed inset-0 bg-black/45 backdrop-blur-sm z-[70] hidden opacity-0 transition-opacity duration-300">
+            <div class="absolute inset-0" onclick="dismissAdminDialog()"></div>
+            <div class="min-h-full flex items-center justify-center p-4">
+                <div id="admin-dialog" class="relative w-full max-w-md bg-white rounded-3xl border border-gray-200 shadow-2xl p-8 hidden opacity-0 scale-95 transition-all duration-300">
+                    <button type="button" onclick="dismissAdminDialog()" class="absolute top-5 right-5 p-2 rounded-full bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
+                        <i data-lucide="x" size="18"></i>
+                    </button>
+                    <div class="flex items-start gap-4 mb-6">
+                        <div id="admin-dialog-icon" class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                            <i id="admin-dialog-icon-symbol" data-lucide="sparkles" size="22"></i>
+                        </div>
+                        <div>
+                            <p id="admin-dialog-kicker" class="text-[10px] font-black text-gray-400 uppercase tracking-[0.32em] mb-1">System</p>
+                            <h3 id="admin-dialog-title" class="text-2xl font-bold text-gray-800">提示</h3>
+                            <p id="admin-dialog-message" class="text-sm text-gray-500 mt-2 leading-relaxed"></p>
+                        </div>
+                    </div>
+                    <div id="admin-dialog-actions" class="flex justify-end gap-3"></div>
+                </div>
+            </div>
+        </div>
     </main>
 </div>
 
@@ -216,12 +427,142 @@
         showDash(); 
     } else {
         // 如果没有管理员权限，重定向回主页
-        alert("请先以管理员身份登录。");
-        window.location.href = '/';
+        showAdminAlert("请先以管理员身份登录。", 'warning', '无访问权限').then(() => {
+            window.location.href = '/';
+        });
     }
 
     let trendChart = null;
     let isUploading = false;
+    let activeAdminDialog = null;
+
+    function getAdminDialogElements() {
+        return {
+            overlay: document.getElementById('admin-dialog-overlay'),
+            dialog: document.getElementById('admin-dialog'),
+            kicker: document.getElementById('admin-dialog-kicker'),
+            title: document.getElementById('admin-dialog-title'),
+            message: document.getElementById('admin-dialog-message'),
+            icon: document.getElementById('admin-dialog-icon'),
+            iconSymbol: document.getElementById('admin-dialog-icon-symbol'),
+            actions: document.getElementById('admin-dialog-actions')
+        };
+    }
+
+    function dismissAdminDialog() {
+        if (!activeAdminDialog) return;
+        const { overlay, dialog } = getAdminDialogElements();
+        dialog.classList.add('opacity-0', 'scale-95');
+        overlay.classList.add('opacity-0');
+        setTimeout(() => {
+            dialog.classList.add('hidden');
+            overlay.classList.add('hidden');
+        }, 300);
+
+        const current = activeAdminDialog;
+        activeAdminDialog = null;
+        if (current.resolve) current.resolve(current.fallbackValue);
+    }
+
+    function openAdminDialog(options = {}) {
+        const els = getAdminDialogElements();
+        const toneMap = {
+            info: { kicker: 'System', title: '提示', icon: 'sparkles', iconClass: 'w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0' },
+            success: { kicker: 'Success', title: '操作成功', icon: 'check', iconClass: 'w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0' },
+            warning: { kicker: 'Warning', title: '请确认', icon: 'triangle-alert', iconClass: 'w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0' },
+            error: { kicker: 'Error', title: '操作失败', icon: 'circle-alert', iconClass: 'w-12 h-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center shrink-0' }
+        };
+        const tone = toneMap[options.tone || 'info'] || toneMap.info;
+
+        els.kicker.innerText = options.kicker || tone.kicker;
+        els.title.innerText = options.title || tone.title;
+        els.message.innerText = options.message || '';
+        els.icon.className = options.iconClass || tone.iconClass;
+        els.iconSymbol.setAttribute('data-lucide', options.icon || tone.icon);
+        els.actions.innerHTML = '';
+
+        const buttons = options.buttons || [{ label: '知道了', value: true, kind: 'primary' }];
+        buttons.forEach((button) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.innerText = button.label;
+            btn.className = button.kind === 'secondary'
+                ? 'px-4 py-3 rounded-xl border border-gray-200 text-gray-500 font-bold hover:bg-gray-50 transition'
+                : button.kind === 'danger'
+                    ? 'px-4 py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 transition'
+                    : 'px-4 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition';
+            btn.onclick = () => {
+                const current = activeAdminDialog;
+                activeAdminDialog = null;
+                els.dialog.classList.add('opacity-0', 'scale-95');
+                els.overlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    els.dialog.classList.add('hidden');
+                    els.overlay.classList.add('hidden');
+                }, 300);
+                if (current && current.resolve) current.resolve(button.value);
+            };
+            els.actions.appendChild(btn);
+        });
+
+        return new Promise((resolve) => {
+            activeAdminDialog = { resolve, fallbackValue: options.fallbackValue ?? false };
+            els.overlay.classList.remove('hidden');
+            els.dialog.classList.remove('hidden');
+            setTimeout(() => {
+                els.overlay.classList.remove('opacity-0');
+                els.dialog.classList.remove('opacity-0', 'scale-95');
+                lucide.createIcons({ root: els.dialog });
+            }, 10);
+        });
+    }
+
+    function showAdminAlert(message, tone = 'info', title = '') {
+        return openAdminDialog({
+            message,
+            tone,
+            title,
+            buttons: [{ label: '知道了', value: true, kind: tone === 'error' ? 'danger' : 'primary' }],
+            fallbackValue: true
+        });
+    }
+
+    function showAdminConfirm(message, options = {}) {
+        return openAdminDialog({
+            message,
+            tone: options.tone || 'warning',
+            title: options.title || '请确认',
+            buttons: [
+                { label: options.cancelLabel || '取消', value: false, kind: 'secondary' },
+                { label: options.confirmLabel || '确认', value: true, kind: options.confirmKind || 'primary' }
+            ],
+            fallbackValue: false
+        });
+    }
+
+    async function logoutAdmin(message = '') {
+        if (message) {
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('huabobo_token');
+            localStorage.removeItem('huabobo_user');
+            showAdminAlert(message, 'warning', '登录状态失效').then(() => {
+                window.location.href = '/';
+            });
+            return;
+        }
+
+        const confirmed = await showAdminConfirm('退出后将返回首页，是否继续？', {
+            title: '退出登录',
+            confirmLabel: '确认退出',
+            confirmKind: 'danger'
+        });
+        if (!confirmed) return;
+
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('huabobo_token');
+        localStorage.removeItem('huabobo_user');
+        window.location.href = '/';
+    }
 
     function switchTab(tab) {
         // Hide all views
@@ -463,21 +804,26 @@
                 closeUploadModal();
                 if (type === 'models') loadModels();
                 else loadCarousel();
-                alert('上传完成');
+                await showAdminAlert('上传完成', 'success', '上传成功');
             } else {
                 const data = await res.json();
                 setUploadState(false);
-                alert(data.error || "上传失败");
+                await showAdminAlert(data.error || "上传失败", 'error', '上传失败');
             }
         } catch(e) {
             setUploadState(false);
             console.error(e);
-            alert('上传失败，请稍后重试');
+            await showAdminAlert('上传失败，请稍后重试', 'error', '上传失败');
         }
     }
 
     async function deleteResource(type, id) {
-        if (!confirm('确定要永久删除此资源吗？')) return;
+        const confirmed = await showAdminConfirm('确定要永久删除此资源吗？', {
+            title: '删除资源',
+            confirmLabel: '删除',
+            confirmKind: 'danger'
+        });
+        if (!confirmed) return;
         try {
             const res = await fetch(`/api/admin/resources/${type}/${id}`, {
                 method: 'DELETE',
@@ -487,7 +833,7 @@
                 if (type === 'models') loadModels();
                 else loadCarousel();
             } else {
-                alert("删除失败");
+                await showAdminAlert("删除失败", 'error', '删除失败');
             }
         } catch(e) { console.error(e); }
     }
@@ -557,7 +903,12 @@
 
 
     async function deleteUser(id) {
-        if(!confirm('确定要永久注销此用户吗？其所有作品也将一并删除。')) return;
+        const confirmed = await showAdminConfirm('确定要永久注销此用户吗？其所有作品也将一并删除。', {
+            title: '注销用户',
+            confirmLabel: '确认注销',
+            confirmKind: 'danger'
+        });
+        if(!confirmed) return;
         try {
             const res = await fetch('/api/admin/user/' + id, {
                 method: 'DELETE',
@@ -567,7 +918,7 @@
                 loadUsers();
             } else {
                 const data = await res.json();
-                alert(data.error || "删除失败");
+                await showAdminAlert(data.error || "删除失败", 'error', '删除失败');
             }
         } catch(e) { console.error(e); }
     }
@@ -584,9 +935,7 @@
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             if(res.status === 401 || res.status === 403) {
-                localStorage.removeItem('admin_token');
-                alert("登录已过期，请重新登录。");
-                window.location.href = '/';
+                logoutAdmin("登录已过期，请重新登录。");
                 return;
             }
             const data = await res.json();
@@ -641,7 +990,12 @@
     }
 
     async function deleteProject(id, isManageView = false) {
-        if(!confirm('该操作将永久删除此作品，确认？')) return;
+        const confirmed = await showAdminConfirm('该操作将永久删除此作品，确认？', {
+            title: '删除作品',
+            confirmLabel: '删除',
+            confirmKind: 'danger'
+        });
+        if(!confirmed) return;
         try {
             const res = await fetch('/api/admin/project/' + id, {
                 method: 'DELETE',
@@ -651,7 +1005,7 @@
                 if (isManageView) loadAllProjects();
                 else loadData();
             } else {
-                alert("删除失败");
+                await showAdminAlert("删除失败", 'error', '删除失败');
             }
         } catch(e) { console.error(e); }
     }

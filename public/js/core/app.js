@@ -296,14 +296,7 @@ export const App = {
         try {
             const state = JSON.parse(jsonString);
             
-            // Clear current layers
-            while(this.layers.length > 0) {
-                this.scene.remove(this.layers[0].mesh);
-                this.layers.splice(0, 1);
-            }
-            this.activeIndex = 0;
-            this.currentMesh = null;
-            UI.updateLayerUI([], 0);
+            this.clearSceneLayers();
             
             this.showLoading();
 
@@ -365,8 +358,24 @@ export const App = {
         } catch(e) {
             console.error("Failed to load project state", e);
             this.hideLoading();
-            alert("读取存档失败！");
+            await UI.showAlert("读取存档失败！", 'error', '读取失败');
         }
+    },
+
+    clearSceneLayers() {
+        while (this.layers.length > 0) {
+            this.scene.remove(this.layers[0].mesh);
+            this.layers.splice(0, 1);
+        }
+        this.activeIndex = 0;
+        this.currentMesh = null;
+        UI.updateLayerUI([], 0);
+    },
+
+    async startFreshProject() {
+        this.clearSceneLayers();
+        this.resetCamera();
+        await this.addNewLayer('default');
     },
 
     loadExternalModel(modelData) {
@@ -467,9 +476,13 @@ export const App = {
 
     selectLayer(idx) {
         if (this.activeIndex === idx && this.layers.length > 1) {
-            if (confirm('确定要删除这个面团吗？')) {
-                this.removeLayer(idx);
-            }
+            UI.showConfirm('确定要删除这个面团吗？', {
+                title: '删除面团',
+                confirmLabel: '删除',
+                confirmKind: 'danger'
+            }).then((confirmed) => {
+                if (confirmed) this.removeLayer(idx);
+            });
             return;
         }
         this.activeIndex = idx;
@@ -631,7 +644,7 @@ export const App = {
                 URL.revokeObjectURL(url);
             } catch (err) {
                 console.error("Export 3MF failed:", err);
-                alert("生成 3MF 失败，请尝试使用 STL 导出或检查控制台。");
+                await UI.showAlert("生成 3MF 失败，请尝试使用 STL 导出或检查控制台。", 'error', '导出失败');
             } finally {
                 UI.hideExportMenu();
             }

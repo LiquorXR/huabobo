@@ -3,10 +3,12 @@ import { API } from '../api/client.js';
 export const UI = {
     app: null,
     currentView: 'diy',
-    
+    _lastSavedProjectName: null,
+    _activeDialog: null,
+
     init(appInstance) {
         this.app = appInstance;
-        
+
         // Global click listener to close dropdowns
         window.addEventListener('click', (e) => {
             const menu = document.getElementById('export-menu-container');
@@ -20,50 +22,57 @@ export const UI = {
 
         // Add touch gestures for mobile drawer
         this.setupDrawerGestures();
-        
+
         // Initial nav update
         this.updateNavAccount();
         this.renderCommunityHome();
 
         if (window.API && window.API.getToken()) {
-            this.showCommunityHome(false);
+            this.routeAuthenticatedUser(window.API.getUser(), false);
         }
+    },
+
+    routeAuthenticatedUser(user, refresh = true) {
+        if (!user) {
+            this.currentView = 'diy';
+            this.updateNavAccount();
+            return;
+        }
+
+        if (user.role === 'admin') {
+            window.location.href = '/admin.html';
+            return;
+        }
+
+        this.showCommunityHome(refresh);
     },
 
     updateNavAccount() {
         const user = window.API ? window.API.getUser() : null;
-        const textSpan = document.getElementById('nav-account-text');
-        const btn = document.getElementById('nav-account-btn');
         const communityButtonLabel = document.getElementById('community-nav-label');
         const exportMenu = document.getElementById('export-menu-container');
+        const diyActions = document.getElementById('diy-workspace-actions');
         const communityBtn = document.getElementById('community-nav-btn');
         const topHeader = document.getElementById('top-header');
         const studioAtmosphere = document.getElementById('studio-atmosphere');
-        if (textSpan) {
-            textSpan.innerText = user ? (user.role === 'admin' ? '管理员' : user.username) : '登录';
-            if (user && user.role === 'admin' && btn) {
-                btn.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
-            } else if (btn) {
-                btn.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
-            }
-        }
 
         if (communityButtonLabel) {
-            communityButtonLabel.innerText = this.currentView === 'community' ? '返回DIY' : '灵感社区';
+            communityButtonLabel.innerText = '灵感社区';
         }
 
         if (exportMenu) {
             exportMenu.classList.toggle('hidden', this.currentView === 'community');
         }
 
+        if (diyActions) {
+            diyActions.classList.toggle('hidden', this.currentView !== 'diy' || !user || user.role === 'admin');
+            diyActions.classList.toggle('flex', this.currentView === 'diy' && !!user && user.role !== 'admin');
+        }
+
         if (communityBtn) {
-            communityBtn.classList.toggle('bg-rose-500', this.currentView === 'community');
-            communityBtn.classList.toggle('text-white', this.currentView === 'community');
-            communityBtn.classList.toggle('border-rose-400', this.currentView === 'community');
-            communityBtn.classList.toggle('shadow-rose-500/20', this.currentView === 'community');
-            communityBtn.classList.toggle('bg-white/70', this.currentView !== 'community');
-            communityBtn.classList.toggle('text-rose-500', this.currentView !== 'community');
-            communityBtn.classList.toggle('border-white/50', this.currentView !== 'community');
+            communityBtn.classList.toggle('hidden', !user || user.role === 'admin' || this.currentView === 'community');
+            communityBtn.classList.add('bg-white/70', 'text-rose-500', 'border-white/50');
+            communityBtn.classList.remove('bg-rose-500', 'text-white', 'border-rose-400', 'shadow-rose-500/20');
         }
 
         if (topHeader) {
@@ -78,22 +87,313 @@ export const UI = {
         this.renderCommunityHomeProfile();
     },
 
+    _dialogConfigMap: {
+        info: {
+            kicker: 'System',
+            title: '提示',
+            icon: 'sparkles',
+            iconClass: 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-orange-500/20'
+        },
+        success: {
+            kicker: 'Success',
+            title: '操作成功',
+            icon: 'check',
+            iconClass: 'bg-gradient-to-br from-emerald-400 to-green-500 shadow-lg shadow-emerald-500/20'
+        },
+        warning: {
+            kicker: 'Warning',
+            title: '请确认',
+            icon: 'triangle-alert',
+            iconClass: 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-orange-500/20'
+        },
+        error: {
+            kicker: 'Error',
+            title: '操作失败',
+            icon: 'circle-alert',
+            iconClass: 'bg-gradient-to-br from-rose-400 to-red-500 shadow-lg shadow-rose-500/20'
+        }
+    },
+
+    getDialogElements() {
+        return {
+            overlay: document.getElementById('app-dialog-overlay'),
+            dialog: document.getElementById('app-dialog'),
+            kicker: document.getElementById('app-dialog-kicker'),
+            title: document.getElementById('app-dialog-title'),
+            message: document.getElementById('app-dialog-message'),
+            iconWrap: document.getElementById('app-dialog-icon'),
+            icon: document.getElementById('app-dialog-icon-symbol'),
+            inputWrap: document.getElementById('app-dialog-input-wrap'),
+            inputLabel: document.getElementById('app-dialog-input-label'),
+            input: document.getElementById('app-dialog-input'),
+            actions: document.getElementById('app-dialog-actions')
+        };
+    },
+
+    dismissDialog() {
+        if (!this._activeDialog) return;
+        const { overlay, dialog } = this.getDialogElements();
+        if (!overlay || !dialog) return;
+        dialog.classList.add('opacity-0', 'scale-95');
+        overlay.classList.add('opacity-0');
+        setTimeout(() => {
+            dialog.classList.add('hidden');
+            overlay.classList.add('hidden');
+        }, 300);
+
+        const active = this._activeDialog;
+        this._activeDialog = null;
+        if (active && active.resolve) {
+            active.resolve(active.fallbackValue);
+        }
+    },
+
+    showAccountSettings(initialFocus = 'username') {
+        if (!window.API) return;
+        const user = window.API.getUser();
+        const overlay = document.getElementById('account-settings-overlay');
+        const dialog = document.getElementById('account-settings-dialog');
+        const usernameInput = document.getElementById('account-settings-username');
+        const currentPasswordInput = document.getElementById('account-settings-current-password');
+        const newPasswordInput = document.getElementById('account-settings-new-password');
+        const confirmPasswordInput = document.getElementById('account-settings-confirm-password');
+
+        if (!user || !overlay || !dialog || !usernameInput || !currentPasswordInput || !newPasswordInput || !confirmPasswordInput) {
+            return;
+        }
+
+        if (this._activeDialog) {
+            this.dismissDialog();
+        }
+
+        usernameInput.value = user.username || '';
+        currentPasswordInput.value = '';
+        newPasswordInput.value = '';
+        confirmPasswordInput.value = '';
+
+        overlay.classList.remove('hidden');
+        dialog.classList.remove('hidden');
+
+        setTimeout(() => {
+            overlay.classList.remove('opacity-0');
+            dialog.classList.remove('opacity-0', 'scale-95');
+            const focusMap = {
+                password: currentPasswordInput,
+                newPassword: newPasswordInput,
+                username: usernameInput
+            };
+            const focusTarget = focusMap[initialFocus] || usernameInput;
+            focusTarget.focus();
+            if (window.lucide) window.lucide.createIcons({ root: dialog });
+        }, 10);
+    },
+
+    hideAccountSettings() {
+        const overlay = document.getElementById('account-settings-overlay');
+        const dialog = document.getElementById('account-settings-dialog');
+        if (!overlay || !dialog) return;
+
+        dialog.classList.add('opacity-0', 'scale-95');
+        overlay.classList.add('opacity-0');
+        setTimeout(() => {
+            dialog.classList.add('hidden');
+            overlay.classList.add('hidden');
+        }, 300);
+    },
+
+    async submitAccountSettings() {
+        if (!window.API) return;
+        const user = window.API.getUser();
+        if (!user) return;
+
+        const usernameInput = document.getElementById('account-settings-username');
+        const currentPasswordInput = document.getElementById('account-settings-current-password');
+        const newPasswordInput = document.getElementById('account-settings-new-password');
+        const confirmPasswordInput = document.getElementById('account-settings-confirm-password');
+        if (!usernameInput || !currentPasswordInput || !newPasswordInput || !confirmPasswordInput) return;
+
+        const newUsername = usernameInput.value.trim();
+        const currentPassword = currentPasswordInput.value;
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        const usernameChanged = !!newUsername && newUsername !== user.username;
+        const wantsPasswordChange = !!currentPassword || !!newPassword || !!confirmPassword;
+
+        if (!newUsername) {
+            await this.showAlert('艺名不能为空', 'warning', '信息不完整');
+            return;
+        }
+
+        if (wantsPasswordChange) {
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                await this.showAlert('修改密码时请完整填写当前密码、新密码和确认密码', 'warning', '信息不完整');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                await this.showAlert('两次输入的新密码不一致，请重新确认', 'warning', '信息不一致');
+                return;
+            }
+        }
+
+        if (!usernameChanged && !wantsPasswordChange) {
+            await this.showAlert('未检测到需要保存的更改', 'warning', '无需保存');
+            return;
+        }
+
+        try {
+            await window.API.updateAccountSettings({
+                newUsername: usernameChanged ? newUsername : '',
+                currentPassword: wantsPasswordChange ? currentPassword : '',
+                newPassword: wantsPasswordChange ? newPassword : ''
+            });
+            this.hideAccountSettings();
+            this.updateNavAccount();
+            this.renderCommunityHomeProfile();
+            this.refreshCommunity();
+
+            const successMessage = usernameChanged && wantsPasswordChange
+                ? '艺名和密码都已更新！'
+                : usernameChanged
+                    ? '艺名修改成功！'
+                    : '密码修改成功！';
+            await this.showAlert(successMessage, 'success', '已保存');
+        } catch (e) {
+            await this.showAlert('保存失败：' + e.message, 'error', '保存失败');
+        }
+    },
+
+    openDialog(options = {}) {
+        const els = this.getDialogElements();
+        if (!els.overlay || !els.dialog) {
+            return Promise.resolve(options.fallbackValue ?? null);
+        }
+
+        if (this._activeDialog) {
+            this.dismissDialog();
+        }
+
+        const tone = this._dialogConfigMap[options.tone || 'info'] || this._dialogConfigMap.info;
+        els.kicker.innerText = options.kicker || tone.kicker;
+        els.title.innerText = options.title || tone.title;
+        els.message.innerText = options.message || '';
+        els.iconWrap.className = `w-12 h-12 rounded-2xl text-white flex items-center justify-center shrink-0 ${options.iconClass || tone.iconClass}`;
+        els.icon.setAttribute('data-lucide', options.icon || tone.icon);
+
+        const needsInput = options.mode === 'prompt';
+        els.inputWrap.classList.toggle('hidden', !needsInput);
+        if (needsInput) {
+            els.inputLabel.innerText = options.inputLabel || '输入内容';
+            els.input.value = options.initialValue || '';
+            els.input.placeholder = options.placeholder || '';
+        }
+
+        els.actions.innerHTML = '';
+
+        const buttons = options.buttons || [{ label: '知道了', value: true, kind: 'primary' }];
+        buttons.forEach((button) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.innerText = button.label;
+            btn.className = button.kind === 'secondary'
+                ? 'px-4 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-colors'
+                : button.kind === 'danger'
+                    ? 'px-4 py-3 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600 transition-colors'
+                    : 'px-4 py-3 rounded-xl bg-amber-500 text-amber-950 font-bold hover:bg-amber-400 transition-colors';
+            btn.onclick = () => {
+                const resolver = this._activeDialog;
+                this._activeDialog = null;
+                els.dialog.classList.add('opacity-0', 'scale-95');
+                els.overlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    els.dialog.classList.add('hidden');
+                    els.overlay.classList.add('hidden');
+                }, 300);
+                if (resolver && resolver.resolve) {
+                    resolver.resolve(needsInput && button.value === true ? els.input.value : button.value);
+                }
+            };
+            els.actions.appendChild(btn);
+        });
+
+        return new Promise((resolve) => {
+            this._activeDialog = {
+                resolve,
+                fallbackValue: options.fallbackValue ?? (needsInput ? null : false)
+            };
+
+            els.overlay.classList.remove('hidden');
+            els.dialog.classList.remove('hidden');
+            setTimeout(() => {
+                els.overlay.classList.remove('opacity-0');
+                els.dialog.classList.remove('opacity-0', 'scale-95');
+                if (needsInput) {
+                    els.input.focus();
+                    els.input.select();
+                }
+                if (window.lucide) window.lucide.createIcons({ root: els.dialog });
+            }, 10);
+        });
+    },
+
+    showAlert(message, tone = 'info', title = '') {
+        return this.openDialog({
+            mode: 'alert',
+            message,
+            tone,
+            title,
+            buttons: [{ label: '知道了', value: true, kind: tone === 'error' ? 'danger' : 'primary' }],
+            fallbackValue: true
+        });
+    },
+
+    showConfirm(message, options = {}) {
+        return this.openDialog({
+            mode: 'confirm',
+            message,
+            tone: options.tone || 'warning',
+            title: options.title || '请确认',
+            buttons: [
+                { label: options.cancelLabel || '取消', value: false, kind: 'secondary' },
+                { label: options.confirmLabel || '确认', value: true, kind: options.confirmKind || 'primary' }
+            ],
+            fallbackValue: false
+        });
+    },
+
+    showPrompt(message, options = {}) {
+        return this.openDialog({
+            mode: 'prompt',
+            message,
+            tone: options.tone || 'info',
+            title: options.title || '请输入',
+            inputLabel: options.inputLabel || '输入内容',
+            initialValue: options.initialValue || '',
+            placeholder: options.placeholder || '',
+            buttons: [
+                { label: options.cancelLabel || '取消', value: false, kind: 'secondary' },
+                { label: options.confirmLabel || '确认', value: true, kind: 'primary' }
+            ],
+            fallbackValue: null
+        });
+    },
+
     showEntryLogin() {
         const overlay = document.getElementById('entry-login-overlay');
         if (!overlay) return;
-        
+
         const card = document.getElementById('entry-login-card');
         if (card) card.classList.remove('active');
-        
+
         // 响应式背景逻辑：移动端使用 2.png，桌面端使用 1.png
         const isMobile = window.innerWidth < 768;
         const photoName = isMobile ? '2.png' : '1.jpg';
         const randomPhoto = `backgrounds/${photoName}`;
-        
+
         overlay.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('${randomPhoto}')`;
         overlay.style.backgroundSize = "cover";
         overlay.style.backgroundPosition = "center";
-        
+
         overlay.classList.remove('hidden');
         setTimeout(() => {
             overlay.classList.add('opacity-100');
@@ -120,35 +420,62 @@ export const UI = {
         const loginTab = document.getElementById('tab-login');
         const registerTab = document.getElementById('tab-register');
         const submitBtn = document.getElementById('entry-submit-btn');
+        const usernameLabel = document.getElementById('entry-username-label');
+        const usernameInput = document.getElementById('entry-username');
+        const emailField = document.getElementById('entry-email-field');
 
         if (tab === 'login') {
             loginTab.classList.add('active');
             registerTab.classList.remove('active');
             submitBtn.innerText = '开启艺术之旅';
+            if (usernameLabel) usernameLabel.innerText = '艺名 / 用户名 / 邮箱';
+            if (usernameInput) usernameInput.placeholder = '输入艺名或邮箱';
+            if (emailField) emailField.classList.add('hidden');
         } else {
             loginTab.classList.remove('active');
             registerTab.classList.add('active');
             submitBtn.innerText = '加入数字传承';
+            if (usernameLabel) usernameLabel.innerText = '艺名 / 用户名';
+            if (usernameInput) usernameInput.placeholder = '输入您的昵称';
+            if (emailField) emailField.classList.remove('hidden');
         }
     },
 
     async submitEntryAuth() {
-        const userStr = document.getElementById('entry-username').value;
+        const userStr = document.getElementById('entry-username').value.trim();
         const passStr = document.getElementById('entry-password').value;
-        if (!userStr || !passStr) return alert("请输入完整的账号密码");
+        const emailInput = document.getElementById('entry-email');
+        const emailStr = emailInput ? emailInput.value.trim() : '';
+        if (!userStr || !passStr) {
+            await this.showAlert("请输入完整的账号密码", 'warning', '信息不完整');
+            return;
+        }
 
         try {
+            let user;
             if (this._entryTab === 'login') {
-                await window.API.login(userStr, passStr);
+                user = await window.API.login(userStr, passStr);
             } else {
-                await window.API.register(userStr, passStr);
+                const availability = await window.API.checkRegisterAvailability(userStr, emailStr);
+                if (!availability.usernameAvailable) {
+                    await this.showAlert('当前用户名已被注册，请更换后再试', 'warning', '注册失败');
+                    return;
+                }
+                if (emailStr && !availability.emailAvailable) {
+                    await this.showAlert('当前邮箱已被注册，请更换后再试', 'warning', '注册失败');
+                    return;
+                }
+                user = await window.API.register(userStr, passStr, emailStr);
             }
             this.hideEntryLogin();
             this.updateNavAccount();
-            this.renderAuthContent();
-            this.showCommunityHome();
-        } catch(e) {
-            alert((this._entryTab === 'login' ? "登录" : "注册") + "失败：" + e.message);
+            this.routeAuthenticatedUser(user);
+        } catch (e) {
+            await this.showAlert(
+                (this._entryTab === 'login' ? "登录" : "注册") + "失败：" + e.message,
+                'error',
+                this._entryTab === 'login' ? '登陆失败' : '注册失败'
+            );
         }
     },
 
@@ -185,7 +512,7 @@ export const UI = {
                 // Swipe down enough, close drawer
                 this.toggleMobileDrawer();
             }
-            
+
             // Reset values
             touchStartY = 0;
             touchMoveY = 0;
@@ -262,84 +589,8 @@ export const UI = {
         if (dropdown) dropdown.classList.remove('show');
     },
 
-    toggleAccount() {
-        const modal = document.getElementById('auth-modal');
-        const overlay = document.getElementById('auth-modal-overlay');
-        if (!modal || !overlay) return;
-
-        const isHidden = modal.classList.contains('translate-x-full');
-        if (isHidden) {
-            this.renderAuthContent();
-            overlay.classList.remove('hidden');
-            setTimeout(() => {
-                overlay.classList.remove('opacity-0');
-                modal.classList.remove('translate-x-full');
-            }, 10);
-        } else {
-            modal.classList.add('translate-x-full');
-            overlay.classList.add('opacity-0');
-            setTimeout(() => overlay.classList.add('hidden'), 500);
-            this.updateNavAccount();
-        }
-    },
-
-    renderAuthContent() {
-        const container = document.getElementById('auth-modal-content');
-        const title = document.getElementById('auth-modal-title');
-        const user = window.API ? window.API.getUser() : null;
-
-        if (user) {
-            title.innerText = '创作管理';
-            container.innerHTML = `
-                <div class="mb-6 p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">Workspace</p>
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h3 class="text-xl font-black text-slate-900">${user.username}</h3>
-                            <p class="text-sm text-slate-500 mt-1">在这里管理当前创作、存档和发布状态。</p>
-                        </div>
-                        <button onclick="UI.changeUsername()" class="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all shrink-0">
-                            <i data-lucide="edit-3" size="18"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="flex gap-4 mb-6">
-                    <button onclick="UI.saveCurrentProjectAsNew()" class="flex-1 bg-amber-100 text-amber-700 py-3 rounded-xl font-bold hover:bg-amber-200 transition-colors">存为新作品</button>
-                    ${this.app && this.app._activeProjectId ? `<button onclick="UI.updateCurrentProject()" class="flex-1 bg-emerald-100 text-emerald-700 py-3 rounded-xl font-bold hover:bg-emerald-200 transition-colors">更新保存</button>` : ''}
-                </div>
-
-                <h3 class="font-bold text-slate-500 text-sm mb-4">云端存档</h3>
-                <div id="user-projects-list" class="space-y-4">
-                    <div class="text-center text-slate-400 py-4 text-sm animate-pulse">加载中...</div>
-                </div>
-                <button onclick="UI.logout()" class="w-full mt-8 py-3 text-red-500 font-bold bg-red-50 rounded-xl hover:bg-red-100 transition-colors">退出登录</button>
-            `;
-            this.loadUserProjects();
-        } else {
-            title.innerText = '账号登录';
-            container.innerHTML = `
-                <div class="space-y-4 mt-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">用户名</label>
-                        <input id="auth-username" type="text" class="auth-input" placeholder="输入您的昵称">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">密码</label>
-                        <input id="auth-password" type="password" class="auth-input" placeholder="输入密码">
-                    </div>
-                    <div class="pt-4 flex flex-col gap-3">
-                        <button onclick="UI.submitLogin()" class="auth-btn">登录 / Login</button>
-                        <button onclick="UI.submitRegister()" class="w-full py-3 text-slate-500 font-bold bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">注册新账号</button>
-                    </div>
-                </div>
-            `;
-        }
-    },
-
     async loadUserProjects() {
         const lists = [
-            document.getElementById('user-projects-list'),
             document.getElementById('community-user-projects-list')
         ].filter(Boolean);
         if (lists.length === 0) return;
@@ -357,7 +608,7 @@ export const UI = {
                 try {
                     thumbs = JSON.parse(p.thumbnail);
                     if (!Array.isArray(thumbs)) thumbs = [p.thumbnail];
-                } catch(e) {
+                } catch (e) {
                     thumbs = p.thumbnail ? [p.thumbnail] : [];
                 }
 
@@ -484,14 +735,14 @@ export const UI = {
         if (event) event.stopPropagation();
         const menu = document.getElementById(`project-menu-${projectId}`);
         if (!menu) return;
-        
+
         // Close other menus first
         document.querySelectorAll('[id^="project-menu-"]').forEach(m => {
             if (m.id !== `project-menu-${projectId}`) m.classList.add('hidden');
         });
 
         menu.classList.toggle('hidden');
-        
+
         // Close on outside click
         const closeMenu = (e) => {
             if (!menu.contains(e.target) && !event.target.contains(e.target)) {
@@ -540,23 +791,34 @@ export const UI = {
                 <div class="p-5 lg:p-6 border-b border-slate-100">
                     <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4">Profile</p>
                     <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-2xl shadow-lg uppercase shrink-0">
-                            ${user.username.substring(0,1)}
+                        <div class="relative w-16 h-16 rounded-[1.4rem] bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100 border border-amber-200/70 shadow-lg shrink-0 overflow-hidden flex items-center justify-center">
+                            <div class="absolute -top-2 -right-1 w-7 h-7 rounded-full bg-amber-300/50 blur-md"></div>
+                            <div class="absolute -bottom-2 -left-1 w-8 h-8 rounded-full bg-rose-200/45 blur-md"></div>
+                            <div class="relative w-11 h-11 rounded-full bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center shadow-[0_8px_18px_rgba(249,115,22,0.28)]">
+                                <i data-lucide="flower-2" size="20" class="text-white"></i>
+                            </div>
                         </div>
                         <div class="min-w-0 flex-1">
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">我的艺名</p>
                             <h4 class="font-black text-slate-800 text-xl truncate">${user.username}</h4>
                         </div>
-                        <button onclick="UI.changeUsername()" class="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all shrink-0">
+                        <button onclick="UI.showAccountSettings()" class="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all shrink-0">
                             <i data-lucide="edit-3" size="18"></i>
                         </button>
                     </div>
                 </div>
-                <div class="p-5 lg:p-6 flex flex-col gap-3">
-                    <button onclick="UI.showDIYView()" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl font-black text-sm tracking-widest shadow-lg shadow-orange-500/20 hover:opacity-95 transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="wand-sparkles" size="18"></i>
-                        进入DIY体验
-                    </button>
+                <div class="p-5 lg:p-6 flex flex-col gap-4">
+                    <div class="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">登录邮箱</p>
+                            <p class="text-sm font-semibold text-slate-700 break-all">${user.email || '未绑定邮箱'}</p>
+                            <p class="text-xs text-slate-500 mt-1">绑定后可直接使用邮箱登录</p>
+                        </div>
+                        <button onclick="UI.changeEmail()" class="px-3 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors shrink-0">
+                            ${user.email ? '修改邮箱' : '绑定邮箱'}
+                        </button>
+                    </div>
+                    <button onclick="UI.showAccountSettings('password')" class="w-full py-3 text-slate-700 font-bold bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors">账号设置</button>
                     <button onclick="UI.logout()" class="w-full py-3 text-red-500 font-bold bg-red-50 rounded-2xl hover:bg-red-100 transition-colors">退出登录</button>
                 </div>
             </section>
@@ -616,73 +878,73 @@ export const UI = {
 
 
     async submitLogin() {
-        if (!window.API) return;
-        const userStr = document.getElementById('auth-username').value;
-        const passStr = document.getElementById('auth-password').value;
-        if (!userStr || !passStr) return alert("请输入完整的账号密码");
-        try {
-            await window.API.login(userStr, passStr);
-            this.renderAuthContent();
-            this.updateNavAccount();
-            this.showCommunityHome();
-        } catch(e) { alert("登录失败：" + e.message); }
+        this.showEntryLogin();
     },
 
     async submitRegister() {
-        if (!window.API) return;
-        const userStr = document.getElementById('auth-username').value;
-        const passStr = document.getElementById('auth-password').value;
-        if (!userStr || !passStr) return alert("请输入完整的账号密码");
-        try {
-            await window.API.register(userStr, passStr);
-            this.renderAuthContent();
-            this.updateNavAccount();
-            this.showCommunityHome();
-        } catch(e) { alert("注册失败：" + e.message); }
+        this.showEntryLogin();
     },
 
     async changeUsername() {
+        this.showAccountSettings();
+    },
+
+    async changeEmail() {
         if (!window.API) return;
         const user = window.API.getUser();
-        const newName = prompt("请输入新的艺名：", user ? user.username : "");
-        if (!newName || newName === user.username) return;
-        
+        const newEmail = await this.showPrompt("请输入要绑定的邮箱，留空可解除绑定", {
+            title: user && user.email ? '修改邮箱' : '绑定邮箱',
+            inputLabel: '邮箱地址',
+            initialValue: user && user.email ? user.email : '',
+            placeholder: 'name@example.com'
+        });
+        if (newEmail === null) return;
+        if (user && newEmail.trim() === (user.email || '')) return;
+
         try {
-            await window.API.updateUsername(newName);
-            this.renderAuthContent();
+            await window.API.updateEmail(newEmail);
             this.updateNavAccount();
             this.renderCommunityHomeProfile();
-            this.refreshCommunity();
-            alert("艺名修改成功！");
-        } catch(e) {
-            alert("修改失败：" + e.message);
+            await this.showAlert(newEmail.trim() ? '邮箱绑定成功！' : '邮箱已解除绑定。', 'success', '已保存');
+        } catch (e) {
+            await this.showAlert("修改失败：" + e.message, 'error', '修改失败');
         }
     },
 
-    logout() {
-        const authModal = document.getElementById('auth-modal');
-        const authOverlay = document.getElementById('auth-modal-overlay');
+    async changePassword() {
+        this.showAccountSettings('password');
+    },
+
+    async logout() {
+        const confirmed = await this.showConfirm("退出后将返回登录入口，是否继续？", {
+            title: '退出登录',
+            confirmLabel: '确认退出',
+            confirmKind: 'danger'
+        });
+        if (!confirmed) return;
+
         const communityModal = document.getElementById('community-modal');
         const exportDropdown = document.getElementById('export-dropdown');
         if (window.API) window.API.clearToken();
         if (this.app) this.app._activeProjectId = null;
-        if (authModal) authModal.classList.add('translate-x-full');
-        if (authOverlay) {
-            authOverlay.classList.add('opacity-0');
-            setTimeout(() => authOverlay.classList.add('hidden'), 300);
-        }
         if (communityModal) communityModal.classList.add('translate-y-full');
         if (exportDropdown) exportDropdown.classList.remove('show');
         this.currentView = 'diy';
-        this.renderAuthContent();
+        this._lastSavedProjectName = null;
         this.renderCommunityHomeProfile();
         this.updateNavAccount();
         this.showEntryLogin();
     },
 
     async saveCurrentProjectAsNew() {
-        if (!this.app || !window.API) return;
-        const name = prompt("给你的新作品起个名字吧：", "灵感花饽饽" + Math.floor(Math.random()*100));
+        if (!this.app || !window.API) return null;
+        const defaultName = this._lastSavedProjectName || ("灵感花饽饽" + Math.floor(Math.random() * 100));
+        const name = await this.showPrompt("给你的新作品起个名字吧", {
+            title: '保存新作品',
+            inputLabel: '作品名称',
+            initialValue: defaultName,
+            placeholder: '输入作品名称'
+        });
         if (!name) return;
         try {
             const data = this.app.exportProjectState();
@@ -690,37 +952,92 @@ export const UI = {
             const res = await window.API.saveProject({ name, scene_data: data, thumbnail });
 
             this.app._activeProjectId = res.id;
-            this.loadUserProjects();
-            alert("已保存为新作品！");
-        } catch (e) { alert("保存失败：" + e.message); }
+            this._lastSavedProjectName = res.name || name;
+            await this.loadUserProjects();
+            await this.refreshCommunity();
+            await this.showAlert("已保存为新作品！", 'success', '保存成功');
+            return res;
+        } catch (e) {
+            await this.showAlert("保存失败：" + e.message, 'error', '保存失败');
+        }
+        return null;
     },
 
     async updateCurrentProject() {
-        if (!this.app || !window.API || !this.app._activeProjectId) return;
+        if (!this.app || !window.API || !this.app._activeProjectId) return null;
         try {
             const data = this.app.exportProjectState();
             const thumbnail = await this.app.captureSceneSnapshot();
-            await window.API.saveProject({ id: this.app._activeProjectId, scene_data: data, thumbnail });
+            const res = await window.API.saveProject({ id: this.app._activeProjectId, scene_data: data, thumbnail });
 
-            this.loadUserProjects();
-            alert("已更新！");
-        } catch (e) { alert("更新失败：" + e.message); }
+            this._lastSavedProjectName = res.name || this._lastSavedProjectName;
+            await this.loadUserProjects();
+            await this.refreshCommunity();
+            await this.showAlert("已更新！", 'success', '保存成功');
+            return res;
+        } catch (e) {
+            await this.showAlert("更新失败：" + e.message, 'error', '更新失败');
+        }
+        return null;
+    },
+
+    async saveCurrentProject() {
+        if (!window.API || !window.API.getUser()) {
+            this.showEntryLogin();
+            return;
+        }
+
+        if (this.app && this.app._activeProjectId) {
+            await this.updateCurrentProject();
+            return;
+        }
+
+        await this.saveCurrentProjectAsNew();
+    },
+
+    async saveAndReturnToDashboard() {
+        if (!window.API || !window.API.getUser()) {
+            this.showEntryLogin();
+            return;
+        }
+
+        let result = null;
+        if (this.app && this.app._activeProjectId) {
+            result = await this.updateCurrentProject();
+        } else {
+            result = await this.saveCurrentProjectAsNew();
+        }
+
+        if (!result) return;
+
+        this.showCommunityHome(true);
     },
 
     async deleteProject(id) {
-        if (!confirm("确定要删除这个存档吗？")) return;
+        const shouldDelete = await this.showConfirm("确定要删除这个存档吗？", {
+            title: '删除存档',
+            confirmLabel: '删除',
+            confirmKind: 'danger'
+        });
+        if (!shouldDelete) return;
         try {
             await window.API.deleteProject(id);
             if (this.app && this.app._activeProjectId === id) this.app._activeProjectId = null;
-            this.loadUserProjects();
-        } catch(e) { alert("删除失败：" + e.message); }
+            await this.loadUserProjects();
+            await this.refreshCommunity();
+        } catch (e) {
+            await this.showAlert("删除失败：" + e.message, 'error', '删除失败');
+        }
     },
 
     async shareProject(id, isPublic) {
         try {
             await window.API.saveProject({ id: id, is_public: isPublic });
-            this.loadUserProjects();
-        } catch(e) { alert("操作失败：" + e.message); }
+            await this.loadUserProjects();
+            await this.refreshCommunity();
+        } catch (e) {
+            await this.showAlert("操作失败：" + e.message, 'error', '操作失败');
+        }
     },
 
     async loadProject(id) {
@@ -729,25 +1046,53 @@ export const UI = {
             const p = projects.find(x => x.id === id);
             if (p && p.scene_data && this.app) {
                 this.app._activeProjectId = p.id;
+                this._lastSavedProjectName = p.name || null;
                 this.showDIYView();
                 await this.app.loadProjectState(p.scene_data);
-                const modal = document.getElementById('auth-modal');
-                const overlay = document.getElementById('auth-modal-overlay');
-                if (modal) modal.classList.add('translate-x-full');
-                if (overlay) {
-                    overlay.classList.add('opacity-0');
-                    setTimeout(() => overlay.classList.add('hidden'), 300);
-                }
             }
-        } catch(e) { alert("读取失败：" + e.message); }
+        } catch (e) {
+            await this.showAlert("读取失败：" + e.message, 'error', '读取失败');
+        }
+    },
+
+    async createNewProject() {
+        if (!window.API || !window.API.getUser()) {
+            this.showEntryLogin();
+            return;
+        }
+
+        const confirmed = await this.showConfirm("创建新作品会清空当前未保存的制作内容，是否继续？", {
+            title: '创建新作品',
+            confirmLabel: '继续创建',
+            confirmKind: 'primary'
+        });
+        if (!confirmed) return;
+
+        try {
+            if (this.app) {
+                this.app._activeProjectId = null;
+                this._lastSavedProjectName = null;
+                await this.app.startFreshProject();
+            }
+            this.showDIYView();
+        } catch (e) {
+            await this.showAlert("创建新作品失败：" + e.message, 'error', '创建失败');
+        }
     },
 
     toggleCommunity() {
-        if (this.currentView === 'community') {
-            this.showDIYView();
-        } else {
-            this.showCommunityHome();
+        const user = window.API ? window.API.getUser() : null;
+        if (!user) {
+            this.showEntryLogin();
+            return;
         }
+
+        if (user.role === 'admin') {
+            window.location.href = '/admin.html';
+            return;
+        }
+
+        this.showCommunityHome();
     },
 
     async refreshCommunity() {
@@ -771,7 +1116,7 @@ export const UI = {
                 try {
                     thumbs = JSON.parse(p.thumbnail);
                     if (!Array.isArray(thumbs)) thumbs = [p.thumbnail];
-                } catch(e) {
+                } catch (e) {
                     thumbs = p.thumbnail ? [p.thumbnail] : [];
                 }
 
@@ -803,7 +1148,11 @@ export const UI = {
                     </div>
                     <div class="waterfall-footer">
                         <div class="flex items-center gap-2">
-                            <div class="w-6 h-6 rounded-full bg-gradient-to-br from-amber-200 to-orange-400 text-white font-bold flex items-center justify-center text-[10px] shadow-sm uppercase">${p.author.substring(0,1)}</div>
+                            <div class="relative w-7 h-7 rounded-full bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100 border border-amber-200/70 flex items-center justify-center shrink-0 overflow-hidden">
+                                <div class="absolute inset-[4px] rounded-full bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center">
+                                    <i data-lucide="flower-2" size="12" class="text-white"></i>
+                                </div>
+                            </div>
                             <span class="text-xs font-bold text-slate-600 truncate max-w-[80px]">${p.author}</span>
                         </div>
                         <button onclick="UI.likeCommunityPost('${p.id}', this)" class="like-btn ${p.hasLiked ? 'liked' : ''}">
@@ -820,14 +1169,14 @@ export const UI = {
             if (window.lucide) window.lucide.createIcons();
 
 
-        } catch(e) {
+        } catch (e) {
             grid.innerHTML = `<div class="col-span-full py-10 text-center text-red-500">无法连接到社区网络</div>`;
         }
     },
 
     async likeCommunityPost(id, btnElement) {
         if (!window.API || !window.API.getToken()) {
-            alert("请先登录账号才能点赞哦");
+            await this.showAlert("请先登录账号才能点赞哦", 'warning', '需要登录');
             this.showDIYView();
             this.showEntryLogin();
             return;
@@ -836,7 +1185,7 @@ export const UI = {
             const res = await window.API.likePost(id);
             const countSpan = btnElement.querySelector('.like-count');
             let count = parseInt(countSpan.innerText);
-            
+
             if (res.liked) {
                 btnElement.classList.add('liked');
                 btnElement.querySelector('.like-icon').setAttribute('fill', '#f43f5e');
@@ -846,7 +1195,7 @@ export const UI = {
                 btnElement.querySelector('.like-icon').setAttribute('fill', 'none');
                 countSpan.innerText = Math.max(0, count - 1);
             }
-        } catch(e) { }
+        } catch (e) { }
     },
 
     toggleModelDialog() {
@@ -880,7 +1229,7 @@ export const UI = {
         try {
             const response = await fetch('/api/resources/models');
             const data = await response.json();
-            
+
             // Format to match expected manifest structure
             this.app.modelManifest = {
                 models: data.map(m => ({
@@ -895,12 +1244,12 @@ export const UI = {
             };
             // Add default primitive
             this.app.modelManifest.models.unshift({ id: 'default', name: '圆球面团', type: 'primitive' });
-            
+
             if (this.app.modelManifest.models.length === 0) {
                 grid.innerHTML = '<div class="col-span-full text-center text-slate-400 py-10">暂无可用的模型资源</div>';
                 return;
             }
-            
+
             grid.innerHTML = this.app.modelManifest.models.map(model => `
                 <div id="model-item-${model.id}" onclick="App.addNewLayer('${model.id}'); UI.toggleModelDialog()" 
                      class="group bg-slate-50 hover:bg-amber-50 p-4 rounded-[2rem] border-2 border-transparent hover:border-amber-200 transition-all cursor-pointer flex flex-col items-center gap-3">
@@ -918,7 +1267,7 @@ export const UI = {
                 }
             }
 
-            
+
             if (window.lucide) window.lucide.createIcons();
         } catch (e) {
             console.error("Failed to load models from API", e);
@@ -931,7 +1280,7 @@ export const UI = {
         const item = document.getElementById(`model-item-${model.id}`);
         if (!item) return;
         const container = item.querySelector('.thumbnail-container');
-        
+
         try {
             let mesh;
             if (model.type === 'primitive') {
@@ -942,10 +1291,10 @@ export const UI = {
                 mesh = await this.app.loadExternalModel(model);
             }
 
-            
+
             const dataUrl = await this.app.captureModelSnapshot(mesh);
             container.innerHTML = `<img src="${dataUrl}" class="w-full h-full object-contain p-2">`;
-            
+
             // Cleanup temporary mesh if it was specifically for preview
             if (mesh.geometry) mesh.geometry.dispose();
             if (mesh.material) {
@@ -996,7 +1345,7 @@ export const UI = {
 
         lists.forEach(list => list.innerHTML = html);
         if (window.lucide) window.lucide.createIcons();
-        
+
         this.updateColorPaletteUI(layers, activeIndex);
     },
 
@@ -1076,7 +1425,7 @@ export const UI = {
         content.innerText = '';
         let i = 0;
         const speed = 40; // ms per char
-        
+
         const type = () => {
             if (i < text.length) {
                 content.innerText += text.charAt(i);
@@ -1133,7 +1482,7 @@ export const UI = {
         // Main Gesture Hint Elements
         const hintContainer = document.getElementById('gesture-hint');
         const hintText = document.getElementById('gesture-hint-text');
-        
+
         // Mobile Gesture Hint Elements
         const mobileHintContainer = document.getElementById('mobile-gesture-hint');
         const mobileHintText = document.getElementById('mobile-gesture-hint-text');
@@ -1148,7 +1497,7 @@ export const UI = {
             };
 
             const info = config[activeGestureKey];
-            
+
             // Update Gesture Hint UI
             if (hintContainer && hintText) {
                 hintText.innerText = info.hint;

@@ -40,19 +40,52 @@ export const API = {
         this.setUser(data.user);
         return data.user;
     },
-    async register(username, password) {
+    async register(username, password, email = '') {
         const data = await this.request('/api/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username, password, email })
         });
         this.setToken(data.token);
         this.setUser(data.user);
         return data.user;
     },
+    async checkRegisterAvailability(username, email = '') {
+        return await this.request('/api/auth/check-register', {
+            method: 'POST',
+            body: JSON.stringify({ username, email })
+        });
+    },
     async updateUsername(newUsername) {
         const data = await this.request('/api/auth/username', {
             method: 'PUT',
             body: JSON.stringify({ newUsername })
+        });
+        if (data.token) this.setToken(data.token);
+        if (data.user) this.setUser(data.user);
+        return data.user;
+    },
+    async updateEmail(email) {
+        const data = await this.request('/api/auth/email', {
+            method: 'PUT',
+            body: JSON.stringify({ email })
+        });
+        if (data.token) this.setToken(data.token);
+        if (data.user) this.setUser(data.user);
+        return data.user;
+    },
+    async updatePassword(currentPassword, newPassword) {
+        const data = await this.request('/api/auth/password', {
+            method: 'PUT',
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+        if (data.token) this.setToken(data.token);
+        if (data.user) this.setUser(data.user);
+        return data.user;
+    },
+    async updateAccountSettings(payload) {
+        const data = await this.request('/api/auth/account', {
+            method: 'PUT',
+            body: JSON.stringify(payload)
         });
         if (data.token) this.setToken(data.token);
         if (data.user) this.setUser(data.user);

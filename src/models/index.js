@@ -4,8 +4,13 @@ const { sequelize, dialect } = require('../db/connection');
 const User = sequelize.define('User', {
     id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
     username: { type: DataTypes.STRING, unique: true, allowNull: false },
+    email: { type: DataTypes.STRING, allowNull: true },
     password_hash: { type: DataTypes.STRING, allowNull: false },
     role: { type: DataTypes.STRING, defaultValue: 'user' }
+}, {
+    indexes: [
+        { unique: true, fields: ['email'] }
+    ]
 });
 
 const Project = sequelize.define('Project', {
