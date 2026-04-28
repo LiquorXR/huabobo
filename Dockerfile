@@ -13,4 +13,4 @@ COPY . .
 
 EXPOSE 3179
 
-CMD ["npm", "start:prod"]
+CMD ["npm", "run", "start:prod"]
