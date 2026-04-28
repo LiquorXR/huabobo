@@ -50,6 +50,15 @@
 
 本项目默认可直接使用 SQLite 进行本地开发；如需容器化部署，也保留了基于 Docker Compose + PostgreSQL 的部署方式。
 
+### 前提条件
+
+VPS 上需已安装 Docker 和 Docker Compose（Ubuntu/Debian）：
+
+```bash
+curl -fsSL https://get.docker.com | bash
+apt install docker-compose-plugin -y
+```
+
 ### 部署步骤
 
 1. **克隆代码**：
@@ -59,39 +68,111 @@
    ```
 
 2. **环境变量配置**：
-   - 复制一份生产环境所需的配置：
-     ```bash
-     cp .env.example .env
-     ```
-   - 打开 `.env` 并填写**必须**的生产环境变量，比如：
-     ```ini
-     GEMINI_API_KEY=你的真实秘钥
-     JWT_SECRET=随机生成的长字符串
-     GEMINI_MODEL=gemini-3.1-flash-lite-preview
-     ```
-   - **注意**：生产部署时建议使用 `DB_DIALECT=postgres`。当前 `docker-compose.yml` 会为 `web` 服务显式注入 PostgreSQL 连接参数。
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
 
-3. **安全配置 (可选但建议)**：
-   如果你希望使用自定义的数据库密码，请在 `docker-compose.yml` 文件中同步修改 `db` 容器的 `POSTGRES_PASSWORD` 以及 `web` 容器环境变量中的 `DB_PASS`。
+   必须填写的项：
 
-4. **一键启动**：
+   ```ini
+   GEMINI_API_KEY=你的真实Gemini_API_Key
+   GEMINI_MODEL=gemini-3.1-flash-lite-preview
+   JWT_SECRET=生成一个复杂随机字符串（至少32位）
+
+   DB_DIALECT=postgres
+   DB_HOST=db
+   DB_USER=postgres
+   DB_PASS=设置一个强密码
+   DB_NAME=huabobo
+   DB_PORT=5432
+   ```
+
+   > **注意**：`DB_HOST=db` 对应 docker-compose 中的 PostgreSQL 服务名，不要改成 localhost。如需自定义数据库密码，请在 `docker-compose.yml` 中同步修改 `db` 容器和 `web` 容器的密码。
+
+3. **一键启动**：
    ```bash
    docker compose up -d --build
    ```
-   *说明：Docker 会自动构建包含所有资源的镜像，同时拉取 PostgreSQL 并完成网络打通。*
+   首次构建会安装依赖、拉取 PostgreSQL 镜像并打通网络。后续代码更新后重新执行该命令即可。
 
-5. **验证部署**：
-   - 在浏览器中访问：`http://服务器IP:3179`。
-   - 服务启动时，Sequelize 会由于配置了 `{ alter: true }` 自动把 PostgreSQL 的数据表结构同步完毕，并可以直接登录 Admin UI 添加资源。
+4. **验证部署**：
+   ```bash
+   # 查看容器状态
+   docker compose ps
 
-### VPS 部署建议
-- 建议只暴露 `web` 服务端口，不要把 PostgreSQL 的 `5432` 直接映射到公网。
-- 建议在 VPS 上使用 Nginx/Caddy 反代 `3179`，并由反向代理统一处理 HTTPS。
-- 容器内与宿主机统一监听 `3179`，便于环境一致性和排障。
+   # 查看日志
+   docker compose logs -f web
 
-### 停止与数据持久化
-- 停止服务：`docker-compose down`
-- （注意：数据库的数据被持久化在了 Docker 卷 `postgres_data` 中，即使执行 `down` 也不会丢失数据。若需彻底清除数据，可加上 `-v` 参数）。
+   # 健康检查
+   curl http://localhost:3179/api/health
+   ```
+   浏览器访问 `http://<服务器IP>:3179`，服务启动后 Sequelize 会自动同步数据库表结构。
+
+### 配置反向代理 + HTTPS
+
+项目本身监听 HTTP 3179 端口，建议使用 Nginx 反向代理统一处理 HTTPS。
+
+1. **安装 Nginx + Certbot**：
+   ```bash
+   apt install nginx certbot python3-certbot-nginx -y
+   ```
+
+2. **创建站点配置** `/etc/nginx/sites-available/huabobo`：
+   ```nginx
+   server {
+       listen 80;
+       server_name your-domain.com;
+
+       location / {
+           proxy_pass http://127.0.0.1:3179;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+           client_max_body_size 50m;
+       }
+   }
+   ```
+
+3. **启用并签发 SSL**：
+   ```bash
+   ln -s /etc/nginx/sites-available/huabobo /etc/nginx/sites-enabled/
+   nginx -t
+   systemctl reload nginx
+   certbot --nginx -d your-domain.com
+   ```
+
+### 防火墙配置
+
+VPS 只开放 80/443 端口，**不要**直接暴露 3179（应用端口）或 5432（数据库端口）到公网：
+
+```bash
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
+```
+
+### 常用管理命令
+
+| 操作 | 命令 |
+|------|------|
+| 启动 | `docker compose up -d --build` |
+| 停止 | `docker compose down` |
+| 停止并清除数据库 | `docker compose down -v` |
+| 重启 | `docker compose restart` |
+| 查看日志 | `docker compose logs -f web` |
+| 查看资源占用 | `docker stats` |
+| 更新代码后重新部署 | `git pull && docker compose up -d --build` |
+
+### 数据持久化
+
+PostgreSQL 数据存储在 Docker 命名卷 `postgres_data` 中，执行 `docker compose down` 不会丢失数据。仅当添加 `-v` 参数时才会清除卷。
+
+上传文件（3D 模型、轮播图等）通过 `uploads/` 目录挂载到宿主机，可直接在 `./uploads` 下备份。
 
 ---
 

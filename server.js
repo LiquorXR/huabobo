@@ -63,7 +63,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ limit: '1mb', extended: true }));
 
 
-// Security: Rate limiting for the Gemini API
+// Security: Rate limiting for the AI API
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
@@ -106,60 +106,112 @@ app.get('/api/health', async (req, res) => {
 
 app.get('/api/config', (req, res) => {
     res.json({
-        GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-3.1-flash-lite-preview"
+        OPENAI_MODEL: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        OPENAI_ENABLE_THINKING: process.env.OPENAI_ENABLE_THINKING === 'true'
     });
 });
 
 app.post('/api/ask-master', async (req, res) => {
     try {
-        const { model, contents, systemInstruction } = req.body;
-        const key = process.env.GEMINI_API_KEY;
+        const { model, messages, stream: useStream, enableThinking } = req.body;
+        const apiKey = process.env.OPENAI_API_KEY;
+        const apiUrl = (process.env.OPENAI_API_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+        const resolvedModel = model || process.env.OPENAI_MODEL || 'gpt-4o-mini';
+        const maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS) || 300;
 
-        if (!key) {
-            return res.status(500).json({ error: { message: "GEMINI_API_KEY is not configured" } });
+        if (!apiKey) {
+            return res.status(500).json({ error: { message: "OPENAI_API_KEY is not configured" } });
         }
 
-        // Cache Key generation
-        const cacheKey = crypto.createHash('md5').update(JSON.stringify({ model, contents, systemInstruction })).digest('hex');
-        
-        // Check cache
-        const cachedResponse = aiCache.get(cacheKey);
-        if (cachedResponse) {
-            console.log('[CACHE] Serving AI response from cache');
-            return res.status(200).json(cachedResponse);
+        const requestBody = {
+            model: resolvedModel,
+            messages,
+            max_tokens: maxTokens,
+            temperature: 0.7,
+            stream: !!useStream
+        };
+
+        if (enableThinking || process.env.OPENAI_ENABLE_THINKING === 'true') {
+            requestBody.thinking = { type: 'enabled' };
         }
 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        const reasoningEffort = process.env.OPENAI_REASONING_EFFORT;
+        if (reasoningEffort) {
+            requestBody.reasoning_effort = reasoningEffort;
+        }
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
+        if (!useStream) {
+            const cacheKey = crypto.createHash('md5').update(JSON.stringify({ model: resolvedModel, messages })).digest('hex');
 
-        const apiResponse = await fetch(apiUrl, {
+            const cachedResponse = aiCache.get(cacheKey);
+            if (cachedResponse) {
+                console.log('[CACHE] Serving AI response from cache');
+                return res.status(200).json(cachedResponse);
+            }
+
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15000);
+
+            const apiResponse = await fetch(`${apiUrl}/chat/completions`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                body: JSON.stringify(requestBody),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeout);
+
+            const data = await apiResponse.json();
+
+            if (apiResponse.ok && data.choices && data.choices.length > 0) {
+                aiCache.set(cacheKey, data);
+            }
+
+            return res.status(apiResponse.status).json(data);
+        }
+
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const apiResponse = await fetch(`${apiUrl}/chat/completions`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents,
-                systemInstruction,
-                generationConfig: {
-                    maxOutputTokens: 100,
-                    temperature: 0.7
-                }
-            }),
-            signal: controller.signal
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: JSON.stringify(requestBody)
         });
 
-        clearTimeout(timeout);
-
-        const data = await apiResponse.json();
-        
-        // Save to cache if successful
-        if (apiResponse.ok && data.candidates && data.candidates.length > 0) {
-            aiCache.set(cacheKey, data);
+        if (!apiResponse.ok) {
+            const errorData = await apiResponse.text();
+            let errorJson;
+            try { errorJson = JSON.parse(errorData); } catch (e) { errorJson = { message: errorData }; }
+            res.write(`data: ${JSON.stringify({ error: errorJson })}\n\n`);
+            res.end();
+            return;
         }
 
-        return res.status(apiResponse.status).json(data);
+        const reader = apiResponse.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(decoder.decode(value, { stream: true }));
+        }
+
+        res.end();
     } catch (e) {
-        return res.status(500).json({ error: { message: e.message } });
+        if (res.headersSent && useStream) {
+            res.write(`data: ${JSON.stringify({ error: { message: e.message } })}\n\n`);
+            res.end();
+        } else {
+            return res.status(500).json({ error: { message: e.message } });
+        }
     }
 });
 
@@ -170,8 +222,9 @@ const indexPath = path.join(publicDir, 'index.html');
 let cachedIndexHtml = null;
 try {
     if (fs.existsSync(indexPath)) {
-        const modelName = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite-preview';
-        const injectedScript = `<script>window.ENV_CONFIG = { GEMINI_MODEL: "${modelName}" };</script>`;
+        const modelName = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+        const enableThinking = process.env.OPENAI_ENABLE_THINKING === 'true';
+        const injectedScript = `<script>window.ENV_CONFIG = { OPENAI_MODEL: "${modelName}", OPENAI_ENABLE_THINKING: ${enableThinking} };</script>`;
         cachedIndexHtml = fs.readFileSync(indexPath, 'utf-8').replace('</head>', `${injectedScript}</head>`);
         console.log('[INIT] index.html cached in memory');
     }
