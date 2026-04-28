@@ -23,6 +23,7 @@ router.get('/models/:id', async (req, res) => {
     try {
         const model = await ModelResource.findByPk(req.params.id);
         if (!model) return res.status(404).json({ error: "Model not found" });
+        if (!model.file_path) return res.status(404).json({ error: "Model file path not set" });
 
         const absolutePath = path.join(process.cwd(), model.file_path);
 
@@ -58,6 +59,7 @@ router.get('/carousel/:id', async (req, res) => {
     try {
         const image = await CarouselImage.findByPk(req.params.id);
         if (!image) return res.status(404).json({ error: "Image not found" });
+        if (!image.file_path) return res.status(404).json({ error: "Image file path not set" });
 
         const absolutePath = path.join(process.cwd(), image.file_path);
 

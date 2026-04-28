@@ -219,9 +219,13 @@ router.delete('/resources/models/:id', authMiddleware, adminMiddleware, async (r
     try {
         const model = await ModelResource.findByPk(req.params.id);
         if (model) {
-            const absolutePath = path.join(process.cwd(), model.file_path);
-            if (fs.existsSync(absolutePath)) {
-                fs.unlinkSync(absolutePath);
+            if (model.file_path) {
+                const absolutePath = path.join(process.cwd(), model.file_path);
+                try {
+                    if (fs.existsSync(absolutePath)) {
+                        fs.unlinkSync(absolutePath);
+                    }
+                } catch (_) { /* file already gone */ }
             }
             await model.destroy();
         }
@@ -273,9 +277,13 @@ router.delete('/resources/carousel/:id', authMiddleware, adminMiddleware, async 
     try {
         const image = await CarouselImage.findByPk(req.params.id);
         if (image) {
-            const absolutePath = path.join(process.cwd(), image.file_path);
-            if (fs.existsSync(absolutePath)) {
-                fs.unlinkSync(absolutePath);
+            if (image.file_path) {
+                const absolutePath = path.join(process.cwd(), image.file_path);
+                try {
+                    if (fs.existsSync(absolutePath)) {
+                        fs.unlinkSync(absolutePath);
+                    }
+                } catch (_) { /* file already gone */ }
             }
             await image.destroy();
         }
