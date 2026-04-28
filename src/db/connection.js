@@ -17,6 +17,25 @@ if (dialect === 'postgres') {
       port: process.env.DB_PORT || 5432,
       dialect: 'postgres',
       logging: false,
+      pool: {
+        max: 20,
+        min: 2,
+        acquire: 60000,
+        idle: 30000,
+      },
+      retry: {
+        max: 5,
+        match: [
+          /SequelizeConnectionError/,
+          /SequelizeConnectionRefusedError/,
+          /SequelizeHostNotFoundError/,
+          /SequelizeHostNotReachableError/,
+          /SequelizeInvalidConnectionError/,
+          /SequelizeConnectionTimedOutError/,
+          /ECONNREFUSED/,
+          /ETIMEDOUT/,
+        ],
+      },
     }
   );
 } else {

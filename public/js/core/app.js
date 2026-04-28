@@ -634,7 +634,7 @@ export const App = {
 
         if (format === 'bambu') {
             try {
-                const { exportTo3MF } = await import('../lib/three-3mf-exporter.js');
+                const { exportTo3MF } = await import('../../lib/three-3mf-exporter.js');
                 const blob = await exportTo3MF(exportGroup);
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');

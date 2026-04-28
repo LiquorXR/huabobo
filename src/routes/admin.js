@@ -1,15 +1,44 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const { Op } = require('sequelize');
 const { User, Project, Like, ModelResource, CarouselImage, sequelize } = require('../models');
 const { authMiddleware } = require('./auth');
 const multer = require('multer');
 const router = express.Router();
 
-// Multer setup for memory storage (for DB BLOB)
-const storage = multer.memoryStorage();
+// Multer setup for disk storage
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir)
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(6).toString('hex');
+        cb(null, uniqueSuffix + path.extname(file.originalname))
+    }
+});
+
+const allowedExtensions = ['.glb', '.gltf', '.obj', '.stl', '.3mf', '.ply', '.fbx', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+
+const fileFilter = (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedExtensions.includes(ext)) {
+        cb(null, true);
+    } else {
+        cb(new Error(`File type ${ext} is not allowed. Accepted: ${allowedExtensions.join(', ')}`));
+    }
+};
+
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    fileFilter
 });
 
 
@@ -27,29 +56,45 @@ router.get('/stats', authMiddleware, adminMiddleware, async (req, res) => {
         const projectCount = await Project.count();
         const likeCount = await Like.count();
         
-        // Fetch last 7 days trend
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+
+        const [userTrend, projectTrend] = await Promise.all([
+            User.findAll({
+                attributes: [
+                    [sequelize.fn('DATE', sequelize.col('createdAt')), 'date'],
+                    [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+                ],
+                where: { createdAt: { [Op.gte]: sevenDaysAgo } },
+                group: [sequelize.fn('DATE', sequelize.col('createdAt'))],
+                order: [[sequelize.fn('DATE', sequelize.col('createdAt')), 'ASC']]
+            }),
+            Project.findAll({
+                attributes: [
+                    [sequelize.fn('DATE', sequelize.col('createdAt')), 'date'],
+                    [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+                ],
+                where: { createdAt: { [Op.gte]: sevenDaysAgo } },
+                group: [sequelize.fn('DATE', sequelize.col('createdAt'))],
+                order: [[sequelize.fn('DATE', sequelize.col('createdAt')), 'ASC']]
+            })
+        ]);
+
+        const userMap = {};
+        userTrend.forEach(r => { userMap[r.get('date')] = parseInt(r.get('count'), 10); });
+        const projectMap = {};
+        projectTrend.forEach(r => { projectMap[r.get('date')] = parseInt(r.get('count'), 10); });
+
         const trendData = [];
         for (let i = 6; i >= 0; i--) {
             const date = new Date();
             date.setDate(date.getDate() - i);
-            const start = new Date(date.setHours(0, 0, 0, 0));
-            const end = new Date(date.setHours(23, 59, 59, 999));
-            
-            const users = await User.count({
-                where: {
-                    createdAt: { [Op.between]: [start, end] }
-                }
-            });
-            const projects = await Project.count({
-                where: {
-                    createdAt: { [Op.between]: [start, end] }
-                }
-            });
-            
+            const dateStr = date.toISOString().split('T')[0];
             trendData.push({
-                date: start.toLocaleDateString(),
-                users,
-                projects
+                date: date.toLocaleDateString(),
+                users: userMap[dateStr] || 0,
+                projects: projectMap[dateStr] || 0
             });
         }
 
@@ -106,29 +151,22 @@ router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
 router.delete('/user/:id', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const userId = req.params.id;
-        // Don't allow admin to delete themselves
         if (userId === req.user.userId) {
             return res.status(400).json({ error: "Cannot delete your own admin account." });
         }
 
-        // Deep cleanup:
-        // 1. Find all projects of this user
-        const projects = await Project.findAll({ where: { userId } });
-        const projectIds = projects.map(p => p.id);
-        
-        // 2. Delete all likes for these projects
-        if (projectIds.length > 0) {
-            await Like.destroy({ where: { projectId: { [Op.in]: projectIds } } });
-        }
-        
-        // 3. Delete all likes GIVEN by this user
-        await Like.destroy({ where: { userId } });
-        
-        // 4. Delete user's projects
-        await Project.destroy({ where: { userId } });
-
-        // 5. Finally delete the user
-        await User.destroy({ where: { id: userId } });
+        await sequelize.transaction(async (t) => {
+            const projects = await Project.findAll({ where: { userId }, transaction: t });
+            const projectIds = projects.map(p => p.id);
+            
+            if (projectIds.length > 0) {
+                await Like.destroy({ where: { projectId: { [Op.in]: projectIds } }, transaction: t });
+            }
+            
+            await Like.destroy({ where: { userId }, transaction: t });
+            await Project.destroy({ where: { userId }, transaction: t });
+            await User.destroy({ where: { id: userId }, transaction: t });
+        });
         
         res.json({ success: true });
     } catch (e) {
@@ -157,27 +195,36 @@ router.post('/resources/models', authMiddleware, adminMiddleware, upload.single(
 
         // Fix encoding for filenames (Multer defaults to latin1)
         const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+        
+        // Relative path for database
+        const filePath = `/uploads/${req.file.filename}`;
 
         const model = await ModelResource.create({
             name: name || originalName,
             file_name: originalName,
             mime_type: req.file.mimetype,
-            data: req.file.buffer,
+            file_path: filePath,
             thumbnail: thumbnail || null,
             metadata: metadata || '{}'
         });
 
-
-
         res.json({ success: true, id: model.id });
     } catch (e) {
+        if (req.file) fs.unlinkSync(req.file.path);
         res.status(500).json({ error: e.message });
     }
 });
 
 router.delete('/resources/models/:id', authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        await ModelResource.destroy({ where: { id: req.params.id } });
+        const model = await ModelResource.findByPk(req.params.id);
+        if (model) {
+            const absolutePath = path.join(process.cwd(), model.file_path);
+            if (fs.existsSync(absolutePath)) {
+                fs.unlinkSync(absolutePath);
+            }
+            await model.destroy();
+        }
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -205,23 +252,33 @@ router.post('/resources/carousel', authMiddleware, adminMiddleware, upload.singl
         // Fix encoding for filenames (Multer defaults to latin1)
         const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
 
+        // Relative path for database
+        const filePath = `/uploads/${req.file.filename}`;
+
         const image = await CarouselImage.create({
             order: parseInt(order) || 0,
             file_name: originalName,
             mime_type: req.file.mimetype,
-            data: req.file.buffer
+            file_path: filePath
         });
-
 
         res.json({ success: true, id: image.id });
     } catch (e) {
+        if (req.file) fs.unlinkSync(req.file.path);
         res.status(500).json({ error: e.message });
     }
 });
 
 router.delete('/resources/carousel/:id', authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        await CarouselImage.destroy({ where: { id: req.params.id } });
+        const image = await CarouselImage.findByPk(req.params.id);
+        if (image) {
+            const absolutePath = path.join(process.cwd(), image.file_path);
+            if (fs.existsSync(absolutePath)) {
+                fs.unlinkSync(absolutePath);
+            }
+            await image.destroy();
+        }
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });

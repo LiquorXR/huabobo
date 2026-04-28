@@ -5,6 +5,8 @@ export const UI = {
     currentView: 'diy',
     _lastSavedProjectName: null,
     _activeDialog: null,
+    _dismissTimer: null,
+    _accountTimer: null,
 
     init(appInstance) {
         this.app = appInstance;
@@ -136,9 +138,11 @@ export const UI = {
         if (!overlay || !dialog) return;
         dialog.classList.add('opacity-0', 'scale-95');
         overlay.classList.add('opacity-0');
-        setTimeout(() => {
+        clearTimeout(this._dismissTimer);
+        this._dismissTimer = setTimeout(() => {
             dialog.classList.add('hidden');
             overlay.classList.add('hidden');
+            this._dismissTimer = null;
         }, 300);
 
         const active = this._activeDialog;
@@ -171,6 +175,9 @@ export const UI = {
         newPasswordInput.value = '';
         confirmPasswordInput.value = '';
 
+        clearTimeout(this._accountTimer);
+        this._accountTimer = null;
+
         overlay.classList.remove('hidden');
         dialog.classList.remove('hidden');
 
@@ -195,9 +202,11 @@ export const UI = {
 
         dialog.classList.add('opacity-0', 'scale-95');
         overlay.classList.add('opacity-0');
-        setTimeout(() => {
+        clearTimeout(this._accountTimer);
+        this._accountTimer = setTimeout(() => {
             dialog.classList.add('hidden');
             overlay.classList.add('hidden');
+            this._accountTimer = null;
         }, 300);
     },
 
@@ -305,9 +314,11 @@ export const UI = {
                 this._activeDialog = null;
                 els.dialog.classList.add('opacity-0', 'scale-95');
                 els.overlay.classList.add('opacity-0');
-                setTimeout(() => {
+                clearTimeout(this._dismissTimer);
+                this._dismissTimer = setTimeout(() => {
                     els.dialog.classList.add('hidden');
                     els.overlay.classList.add('hidden');
+                    this._dismissTimer = null;
                 }, 300);
                 if (resolver && resolver.resolve) {
                     resolver.resolve(needsInput && button.value === true ? els.input.value : button.value);
@@ -321,6 +332,9 @@ export const UI = {
                 resolve,
                 fallbackValue: options.fallbackValue ?? (needsInput ? null : false)
             };
+
+            clearTimeout(this._dismissTimer);
+            this._dismissTimer = null;
 
             els.overlay.classList.remove('hidden');
             els.dialog.classList.remove('hidden');

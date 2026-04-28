@@ -20,7 +20,6 @@ export const HandTracker = {
         smoothPosition: { x: 0, y: 0, z: 0 },
         smoothScale: { x: 1, y: 1, z: 1 },
         latchTimer: null, // 移动端状态保持计时器
-        lastRawDetected: 'none',
         isDualHandActive: false, // 是否处于双手指协同模式
         lockedX: 0,
         lockedZ: 0,

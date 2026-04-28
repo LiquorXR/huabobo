@@ -565,7 +565,7 @@
     <div id="app-dialog-overlay"
         class="fixed inset-0 bg-black/45 backdrop-blur-sm z-[1220] hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0" onclick="UI.dismissDialog()"></div>
-        <div class="min-h-full flex items-center justify-center p-4">
+        <div class="relative z-10 min-h-full flex items-center justify-center p-4">
             <div id="app-dialog"
                 class="relative w-[92vw] max-w-md bg-white/95 backdrop-blur-xl rounded-[2rem] border border-amber-100 shadow-[0_24px_80px_rgba(15,23,42,0.18)] p-6 sm:p-7 hidden opacity-0 scale-95 transition-all duration-300">
                 <button type="button" onclick="UI.dismissDialog()"
@@ -597,7 +597,7 @@
     <div id="account-settings-overlay"
         class="fixed inset-0 bg-slate-950/50 backdrop-blur-md z-[1210] hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0" onclick="UI.hideAccountSettings()"></div>
-        <div class="min-h-full flex items-center justify-center p-4 sm:p-6">
+        <div class="relative z-10 min-h-full flex items-center justify-center p-4 sm:p-6">
             <div id="account-settings-dialog"
                 class="relative w-[94vw] max-w-2xl bg-white/95 backdrop-blur-xl rounded-[2rem] border border-white shadow-[0_28px_90px_rgba(15,23,42,0.22)] hidden opacity-0 scale-95 transition-all duration-300 overflow-hidden">
                 <button type="button" onclick="UI.hideAccountSettings()"

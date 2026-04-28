@@ -20,11 +20,20 @@ const Project = sequelize.define('Project', {
     scene_data: { type: DataTypes.TEXT }, // JSON stringified data
     is_public: { type: DataTypes.BOOLEAN, defaultValue: false },
     userId: { type: DataTypes.UUID, allowNull: true } // Explicitly defined foreign key
+}, {
+    indexes: [
+        { fields: ['userId'] }
+    ]
 });
 
 
 const Like = sequelize.define('Like', {
     id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true }
+}, {
+    indexes: [
+        { fields: ['userId'] },
+        { fields: ['projectId'] }
+    ]
 });
 
 const ModelResource = sequelize.define('ModelResource', {
@@ -32,7 +41,7 @@ const ModelResource = sequelize.define('ModelResource', {
     name: { type: DataTypes.STRING, allowNull: false },
     file_name: { type: DataTypes.STRING },
     mime_type: { type: DataTypes.STRING },
-    data: { type: DataTypes.BLOB('long'), allowNull: false },
+    file_path: { type: DataTypes.STRING, allowNull: true },
     thumbnail: { type: DataTypes.TEXT }, // Base64 preview
     metadata: { type: DataTypes.TEXT } // JSON string
 });
@@ -43,7 +52,7 @@ const CarouselImage = sequelize.define('CarouselImage', {
     order: { type: DataTypes.INTEGER, defaultValue: 0 },
     file_name: { type: DataTypes.STRING },
     mime_type: { type: DataTypes.STRING },
-    data: { type: DataTypes.BLOB('long'), allowNull: false }
+    file_path: { type: DataTypes.STRING, allowNull: true }
 });
 
 
@@ -134,12 +143,6 @@ const dropSQLiteBackupTables = async () => {
 };
 
 const syncDatabase = async () => {
-    await dropSQLiteBackupTables();
-
-    // SQLite + alter rebuilds tables and can fail on historical duplicate usernames.
-    await dedupeSQLiteUsers();
-
-    // Note: Use force:false to avoid dropping tables in prod. In a real scenario, use migrations.
     if (dialect === 'sqlite') {
         await sequelize.query('PRAGMA foreign_keys = OFF');
     }
@@ -151,6 +154,9 @@ const syncDatabase = async () => {
             await sequelize.query('PRAGMA foreign_keys = ON');
         }
     }
+
+    await dropSQLiteBackupTables();
+    await dedupeSQLiteUsers();
 
     console.log("Database models synchronized.");
 };

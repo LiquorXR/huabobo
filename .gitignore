@@ -19,7 +19,6 @@ Thumbs.db
 # Environment/Keys
 .env
 .dev.vars
-.wrangler/
 *.pem
 
 # Database
@@ -27,5 +26,6 @@ database/
 *.sqlite
 *.sqlite3
 
-# Scratch / Temp
-scratch/
+# Uploads
+uploads/
+

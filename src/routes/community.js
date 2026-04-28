@@ -1,5 +1,6 @@
 const express = require('express');
 const { Project, User, Like, sequelize } = require('../models');
+const { Op } = require('sequelize');
 const { authMiddleware } = require('./auth');
 const router = express.Router();
 
@@ -43,8 +44,13 @@ router.get('/', async (req, res) => {
                 const JWT_SECRET = process.env.JWT_SECRET || 'huabobo_secret_key_change_in_prod';
                 try {
                     const decoded = jwt.verify(token, JWT_SECRET);
-                    const likes = await Like.findAll({ where: { userId: decoded.userId } });
-                    userLikes = likes.map(l => l.projectId);
+                    const projectIds = projects.map(p => p.id);
+                    if (projectIds.length > 0) {
+                        const likes = await Like.findAll({
+                            where: { userId: decoded.userId, projectId: { [Op.in]: projectIds } }
+                        });
+                        userLikes = likes.map(l => l.projectId);
+                    }
                 } catch(e) {} // ignore invalid token here
             }
         }
