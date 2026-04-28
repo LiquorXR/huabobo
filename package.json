@@ -17,7 +17,7 @@
     "pg-hstore": "^2.3.4",
     "pm2": "^6.0.14",
     "selfsigned": "^2.4.1",
-    "sequelize": "^6.37.8",
+    "sequelize": "^6.37.8"
   },
   "scripts": {
     "start": "node server.js",
