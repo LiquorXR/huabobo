@@ -80,11 +80,11 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "blob:", "'wasm-unsafe-eval'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "blob:", "'wasm-unsafe-eval'", "https://cdn.jsdelivr.net"],
             scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "blob:"],
-            connectSrc: ["'self'", "blob:"],
+            connectSrc: ["'self'", "blob:", "https://cdn.jsdelivr.net"],
             fontSrc: ["'self'"],
             workerSrc: ["'self'", "blob:"],
             mediaSrc: ["'self'"],

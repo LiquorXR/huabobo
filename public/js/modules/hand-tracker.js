@@ -1,5 +1,9 @@
 import { UI } from '../ui/controller.js';
 
+const CDN_HANDS = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240';
+const CDN_CAMERA = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862';
+const CDN_DRAWING = 'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124';
+
 export const HandTracker = {
     app: null,
     videoElement: null,
@@ -63,13 +67,27 @@ export const HandTracker = {
 
     async _loadMediaPipeLibs() {
         const origin = window.location.origin;
-        const base = `${origin}/lib/mediapipe`;
+        const localBase = `${origin}/lib/mediapipe`;
 
-        await this._loadScript(`${base}/hands.js`);
-        await this._loadScript(`${base}/camera_utils.js`);
-        await this._loadScript(`${base}/drawing_utils.js`);
+        const scriptFiles = [
+            { file: 'hands.js', cdn: CDN_HANDS },
+            { file: 'camera_utils.js', cdn: CDN_CAMERA },
+            { file: 'drawing_utils.js', cdn: CDN_DRAWING }
+        ];
 
-        console.log('HandTracker: MediaPipe scripts loaded dynamically');
+        const loadOne = async ({ file, cdn }) => {
+            try {
+                await this._loadScript(`${cdn}/${file}`);
+                console.log(`HandTracker: Loaded ${file} from CDN`);
+            } catch (e) {
+                console.warn(`HandTracker: CDN failed for ${file}, falling back to local`, e.message);
+                await this._loadScript(`${localBase}/${file}`);
+            }
+        };
+
+        await Promise.all(scriptFiles.map(loadOne));
+
+        console.log('HandTracker: MediaPipe scripts loaded');
     },
 
     async enable() {
@@ -206,8 +224,8 @@ export const HandTracker = {
     },
 
     async _initMediaPipe(activeVideo, isMobile) {
-        const LOCAL_LIB_PATH = 'lib/mediapipe';
         const origin = window.location.origin;
+        const localAssetPath = `${origin}/lib/mediapipe`;
 
         const waitForHands = () => {
             if (window.Hands) return Promise.resolve();
@@ -224,10 +242,29 @@ export const HandTracker = {
 
         await waitForHands();
 
+        let useCDN = false;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const resp = await fetch(`${CDN_HANDS}/hands.binarypb`, {
+                method: 'HEAD',
+                signal: controller.signal,
+                cache: 'no-store'
+            });
+            clearTimeout(timeoutId);
+            useCDN = resp.ok;
+            console.log('HandTracker: CDN probe ok, will load models from CDN');
+        } catch (e) {
+            console.warn('HandTracker: CDN unreachable, falling back to local model files', e.message);
+        }
+
+        const resolveAsset = useCDN
+            ? (file) => `${CDN_HANDS}/${file.split('/').pop()}`
+            : (file) => `${localAssetPath}/${file.split('/').pop()}`;
+
         this.hands = new window.Hands({
             locateFile: (file) => {
-                const fileName = file.split('/').pop();
-                const path = `${origin}/${LOCAL_LIB_PATH}/${fileName}`;
+                const path = resolveAsset(file);
                 console.debug(`HandTracker: Loading asset: ${path}`);
                 return path;
             }
