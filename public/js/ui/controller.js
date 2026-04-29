@@ -1112,7 +1112,7 @@ export const UI = {
     async refreshCommunity() {
         const grid = document.getElementById('community-grid');
         if (!grid || !window.API) return;
-        grid.innerHTML = '<div class="col-span-full py-20 text-center text-slate-400" style="column-span: all;">正在获取最新灵感...</div>';
+        grid.innerHTML = '';
 
         try {
             const posts = await window.API.getCommunityPosts(30, 0);

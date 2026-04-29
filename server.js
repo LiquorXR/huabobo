@@ -61,6 +61,16 @@ runMigrations()
 
 // Middleware
 app.use(compression());
+
+// Set explicit MIME types for MediaPipe and 3D assets
+express.static.mime.define({
+    'application/wasm': ['wasm'],
+    'application/octet-stream': ['tflite', 'data', 'binarypb', '3mf'],
+    'model/gltf-binary': ['glb'],
+    'model/gltf+json': ['gltf'],
+    'font/ttf': ['ttf']
+});
+
 const corsOrigin = process.env.CORS_ORIGIN || '*';
 if (corsOrigin === '*' && process.env.NODE_ENV === 'production') {
     console.warn('[SECURITY] CORS is open to all origins. Set CORS_ORIGIN in .env to restrict.');
@@ -70,7 +80,7 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "blob:"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "blob:", "'wasm-unsafe-eval'"],
             scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "blob:"],
@@ -286,7 +296,14 @@ app.get(['/', '/index.html'], (req, res) => {
 // Serve Static files from public dir
 app.use(express.static(publicDir, {
     index: false,
-    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0
+    setHeaders: (res, filePath) => {
+        // 核心库和字体设置较长缓存，减少重复下载 (1年)
+        if (filePath.match(/\.(js|css|wasm|tflite|data|ttf|woff2|png|jpg|jpeg|svg|binarypb)$/)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else {
+            res.setHeader('Cache-Control', 'public, max-age=0');
+        }
+    }
 }));
 
 // Serve uploads

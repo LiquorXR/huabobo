@@ -16,17 +16,25 @@
     <script defer src="lib/three/OrbitControls.js"></script>
     <script defer src="lib/three/OBJExporter.js"></script>
     <script defer src="lib/three/STLExporter.js"></script>
-    <script defer src="lib/mediapipe/hands.js"></script>
-    <script defer src="lib/mediapipe/camera_utils.js"></script>
-    <script defer src="lib/mediapipe/drawing_utils.js"></script>
+    <!-- MediaPipe scripts loaded dynamically via HandTracker.enable() -->
     <!-- UI Framework & Icons -->
-    <script defer src="lib/tailwind.min.js"></script>
+    <script src="lib/tailwind.min.js"></script>
     <script defer src="lib/lucide/lucide.min.js"></script>
 
     <!-- 核心样式与资源本地化 -->
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/auth.css">
     <link rel="stylesheet" href="css/community.css">
+    <style>
+        #loading-overlay {
+            background: url('backgrounds/1.jpg') center/cover no-repeat;
+        }
+        @media (max-width: 767px) {
+            #loading-overlay {
+                background: url('backgrounds/2.png') center/cover no-repeat;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -194,16 +202,16 @@
 
     <!-- Loading UI -->
     <div id="loading-overlay"
-        class="fixed inset-0 bg-gradient-to-br from-amber-50 to-orange-100 z-[500] flex flex-col items-center justify-center transition-opacity duration-500">
+        class="fixed inset-0 z-[500] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="flex flex-col items-center gap-8">
             <div class="flex flex-col items-center gap-3">
-                <h2 class="text-3xl font-bold text-amber-900">正在准备面团</h2>
-                <p class="text-amber-700 text-base">加载3D模型中，请稍候...</p>
+                <h2 class="text-3xl font-bold text-white">正在准备面团</h2>
+                <p class="text-white text-base">加载3D模型中，请稍候...</p>
             </div>
             <div class="flex gap-2 mt-3">
-                <div class="w-2.5 h-2.5 bg-amber-500 rounded-full animate-bounce" style="animation-delay: 0s"></div>
-                <div class="w-2.5 h-2.5 bg-amber-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-                <div class="w-2.5 h-2.5 bg-amber-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                <div class="w-2.5 h-2.5 bg-white rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                <div class="w-2.5 h-2.5 bg-white rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                <div class="w-2.5 h-2.5 bg-white rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
             </div>
         </div>
     </div>
@@ -302,10 +310,6 @@
             <div id="model-grid"
                 class="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto p-2 scrollbar-hide">
                 <!-- Models will be injected here -->
-                <div class="animate-pulse flex flex-col gap-2">
-                    <div class="aspect-square bg-slate-100 rounded-3xl"></div>
-                    <div class="h-4 bg-slate-100 rounded-full w-2/3 mx-auto"></div>
-                </div>
             </div>
         </div>
     </div>
@@ -496,7 +500,6 @@
                                 class="px-3 py-2.5 rounded-xl bg-amber-50 text-amber-700 text-sm sm:text-xs font-black hover:bg-amber-100 transition-colors flex items-center justify-center">创建新作品</button>
                         </div>
                         <div id="community-user-projects-list" class="p-4 community-user-projects-panel">
-                            <div class="text-center text-slate-400 py-6 text-sm animate-pulse">加载中...</div>
                         </div>
                     </section>
                 </aside>
@@ -546,12 +549,14 @@
         import { UI } from './js/ui/controller.js';
         import { Master } from './js/modules/master.js';
         import { Carousel } from './js/ui/carousel.js';
+        import { HandTracker } from './js/modules/hand-tracker.js';
 
         // Bind modules to window for inline onclick handlers used by the current UI
         window.App = App;
         window.UI = UI;
         window.Master = Master;
         window.Carousel = Carousel;
+        window.HandTracker = HandTracker;
 
         // Pass API Key from environment if needed, or define here
         // Note: For simple refactor we keep it in Master.js or as a var

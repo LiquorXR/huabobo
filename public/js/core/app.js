@@ -29,7 +29,7 @@ export const App = {
         window.API = API; // Expose API globally for inline HTML handlers if needed
 
         // Initialize core components
-        const trackerPromise = HandTracker.init(this);
+        HandTracker.init(this);
         
         this.initScene();
         this.initLights();
@@ -37,10 +37,6 @@ export const App = {
         
         Steamer.init(this);
         this.animate();
-
-        trackerPromise.then(() => {
-            console.debug("App: HandTracker initialized");
-        });
         
         if (typeof lucide !== 'undefined') lucide.createIcons();
         UI.init(this);
@@ -55,6 +51,9 @@ export const App = {
         
         // 隐藏加载提示
         this.hideLoading();
+
+        // Auto-enable gesture recognition (lazy-loads MediaPipe)
+        setTimeout(() => HandTracker.enable(), 800);
     },
 
     onWindowResize() {
