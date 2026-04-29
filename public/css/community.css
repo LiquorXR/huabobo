@@ -16,7 +16,7 @@
 
 @media (min-width: 1280px) {
     .waterfall-grid {
-        column-count: 4;
+        column-count: 5;
         column-gap: 1rem;
     }
 }
