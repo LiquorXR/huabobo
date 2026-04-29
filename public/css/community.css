@@ -137,16 +137,21 @@
     .community-dashboard-body {
         flex: 1 1 auto;
         min-height: 0;
-        overflow-y: auto;
+        overflow: hidden;
     }
 
     .community-dashboard-shell {
-        min-height: 100%;
-        overflow: visible;
+        height: 100%;
+        overflow: hidden;
     }
 
     .community-sidebar {
         min-height: 0;
+        overflow-y: auto;
+    }
+
+    .community-sidebar::-webkit-scrollbar {
+        display: none;
     }
 
     #community-home-profile {
@@ -164,6 +169,11 @@
 
     .community-feed-panel {
         min-height: 0;
+        overflow-y: auto;
+    }
+
+    .community-feed-panel::-webkit-scrollbar {
+        display: none;
     }
 
     .community-waterfall-panel {
