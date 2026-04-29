@@ -3,7 +3,7 @@ services:
     build: .
     container_name: huabobo_web
     restart: always
-    mem_limit: 512m
+    mem_limit: 768m
     mem_reservation: 256m
     cpus: 2
     ports:

@@ -231,7 +231,7 @@ router.delete('/resources/models/:id', authMiddleware, adminMiddleware, async (r
         }
         res.json({ success: true });
     } catch (e) {
-        console.error('[Admin]', e); res.status(500).json({ error: "服务器内部错误: " + e.message });
+        console.error('[Admin]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -244,7 +244,7 @@ router.get('/resources/carousel', authMiddleware, adminMiddleware, async (req, r
         });
         res.json(images);
     } catch (e) {
-        console.error('[Admin]', e); res.status(500).json({ error: "服务器内部错误: " + e.message });
+        console.error('[Admin]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -269,7 +269,7 @@ router.post('/resources/carousel', authMiddleware, adminMiddleware, upload.singl
         res.json({ success: true, id: image.id });
     } catch (e) {
         if (req.file) fs.unlinkSync(req.file.path);
-        console.error('[Admin]', e); res.status(500).json({ error: "服务器内部错误: " + e.message });
+        console.error('[Admin]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 
@@ -289,7 +289,7 @@ router.delete('/resources/carousel/:id', authMiddleware, adminMiddleware, async 
         }
         res.json({ success: true });
     } catch (e) {
-        console.error('[Admin]', e); res.status(500).json({ error: "服务器内部错误: " + e.message });
+        console.error('[Admin]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
     }
 });
 

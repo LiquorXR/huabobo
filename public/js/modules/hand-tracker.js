@@ -54,6 +54,10 @@ export const HandTracker = {
     },
 
     async startCameraOnly(videoEl, isMobile) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.warn("HandTracker: Camera unavailable (requires HTTPS or localhost). Gesture controls disabled.");
+            return;
+        }
         try {
             // 如果 Camera 库还没好，使用原生 API 先跑起来
             if (typeof window.Camera === 'undefined') {

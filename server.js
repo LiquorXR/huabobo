@@ -50,10 +50,14 @@ const resourceRoutes = require('./src/routes/resources');
 const app = express();
 const PORT = process.env.PORT || 3179;
 
-// Initialize Database
+// Initialize Database, then start server
 runMigrations()
     .then(() => syncDatabase())
-    .catch(err => console.error("DB Init Error:", err));
+    .then(() => startServer())
+    .catch(err => {
+        console.error("DB Init Error:", err);
+        startServer();
+    });
 
 // Middleware
 app.use(compression());
@@ -247,7 +251,7 @@ app.post('/api/ask-master', authMiddleware, async (req, res) => {
         res.end();
     } catch (e) {
         console.error('[AskMaster] Stream error:', e);
-        if (res.headersSent && useStream) {
+        if (res.headersSent) {
             res.write(`data: ${JSON.stringify({ error: { message: "AI 服务暂时不可用，请稍后重试" } })}\n\n`);
             res.end();
         } else {
@@ -323,40 +327,42 @@ function getLocalIP() {
 }
 
 // Start server
-const localIP = getLocalIP();
+function startServer() {
+    const localIP = getLocalIP();
 
-if (process.env.USE_HTTPS === 'true') {
-    try {
-        const keyPath = path.join(__dirname, process.env.HTTPS_KEY_PATH || 'key.pem');
-        const certPath = path.join(__dirname, process.env.HTTPS_CERT_PATH || 'cert.pem');
-        
-        if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
-            throw new Error(`HTTPS certificates not found at ${keyPath} or ${certPath}. Please run "node scripts/setup-https.js" first.`);
+    if (process.env.USE_HTTPS === 'true') {
+        try {
+            const keyPath = path.join(__dirname, process.env.HTTPS_KEY_PATH || 'key.pem');
+            const certPath = path.join(__dirname, process.env.HTTPS_CERT_PATH || 'cert.pem');
+            
+            if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
+                throw new Error(`HTTPS certificates not found at ${keyPath} or ${certPath}. Please run "node scripts/setup-https.js" first.`);
+            }
+
+            const options = {
+                key: fs.readFileSync(keyPath),
+                cert: fs.readFileSync(certPath)
+            };
+
+            https.createServer(options, app).listen(PORT, '0.0.0.0', () => {
+                console.log(`🚀 Secure Server is running on:`);
+                console.log(`   - Local:    https://localhost:${PORT}`);
+                console.log(`   - Network:  https://${localIP}:${PORT}`);
+            });
+        } catch (err) {
+            console.error("Failed to start HTTPS server:", err.message);
+            console.log("Falling back to HTTP...");
+            app.listen(PORT, '0.0.0.0', () => {
+                console.log(`Server is running on:`);
+                console.log(`   - Local:    http://localhost:${PORT}`);
+                console.log(`   - Network:  http://${localIP}:${PORT}`);
+            });
         }
-
-        const options = {
-            key: fs.readFileSync(keyPath),
-            cert: fs.readFileSync(certPath)
-        };
-
-        https.createServer(options, app).listen(PORT, '0.0.0.0', () => {
-            console.log(`🚀 Secure Server is running on:`);
-            console.log(`   - Local:    https://localhost:${PORT}`);
-            console.log(`   - Network:  https://${localIP}:${PORT}`);
-        });
-    } catch (err) {
-        console.error("Failed to start HTTPS server:", err.message);
-        console.log("Falling back to HTTP...");
+    } else {
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server is running on:`);
             console.log(`   - Local:    http://localhost:${PORT}`);
             console.log(`   - Network:  http://${localIP}:${PORT}`);
         });
     }
-} else {
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log(`Server is running on:`);
-        console.log(`   - Local:    http://localhost:${PORT}`);
-        console.log(`   - Network:  http://${localIP}:${PORT}`);
-    });
 }

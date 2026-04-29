@@ -1,10 +1,10 @@
 const express = require('express');
 const { Project, User, Like, sequelize } = require('../models');
 const { Op } = require('sequelize');
-const { authMiddleware } = require('./auth');
+const { authMiddleware, softAuthMiddleware } = require('./auth');
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+router.get('/', softAuthMiddleware, async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 20;
         const offset = parseInt(req.query.offset) || 0;
@@ -30,20 +30,11 @@ router.get('/', async (req, res) => {
                 })
                 : [],
             (async () => {
-                const authHeader = req.headers.authorization;
-                if (!authHeader) return [];
-                const token = authHeader.split(' ')[1];
-                if (!token) return [];
-                try {
-                    const jwt = require('jsonwebtoken');
-                    const JWT_SECRET = process.env.JWT_SECRET || 'huabobo_secret_key_change_in_prod';
-                    const decoded = jwt.verify(token, JWT_SECRET);
-                    if (projectIds.length === 0) return [];
-                    const likes = await Like.findAll({
-                        where: { userId: decoded.userId, projectId: { [Op.in]: projectIds } }
-                    });
-                    return likes.map(l => l.projectId);
-                } catch (e) { return []; }
+                if (!req.user || projectIds.length === 0) return [];
+                const likes = await Like.findAll({
+                    where: { userId: req.user.userId, projectId: { [Op.in]: projectIds } }
+                });
+                return likes.map(l => l.projectId);
             })()
         ]);
 

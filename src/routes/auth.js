@@ -119,6 +119,17 @@ const authMiddleware = (req, res, next) => {
     });
 };
 
+const softAuthMiddleware = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return next();
+    const token = authHeader.split(' ')[1];
+    if (!token) return next();
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (!err) req.user = decoded;
+        next();
+    });
+};
+
 router.put('/username', authMiddleware, async (req, res) => {
     try {
         const newUsername = normalizeUsername(req.body.newUsername);
@@ -262,4 +273,4 @@ router.put('/account', authMiddleware, async (req, res) => {
     }
 });
 
-module.exports = { router, authMiddleware };
+module.exports = { router, authMiddleware, softAuthMiddleware };
