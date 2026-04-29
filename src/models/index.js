@@ -175,9 +175,17 @@ const runMigrations = async () => {
             await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS mime_type VARCHAR(255)`);
             await sequelize.query(`ALTER TABLE "CarouselImages" ADD COLUMN IF NOT EXISTS file_path VARCHAR(255)`);
 
+            // Drop NOT NULL from legacy "data" column (old schema)
+            try {
+                await sequelize.query(`ALTER TABLE "CarouselImages" ALTER COLUMN data DROP NOT NULL`);
+            } catch (_) { /* column may not exist */ }
+
             // Clean up legacy dirty data that causes 404s/500s because they lack file paths
             await sequelize.query(`DELETE FROM "CarouselImages" WHERE file_path IS NULL`);
             await sequelize.query(`DELETE FROM "ModelResources" WHERE file_path IS NULL`);
+            try {
+                await sequelize.query(`ALTER TABLE "ModelResources" ALTER COLUMN data DROP NOT NULL`);
+            } catch (_) { /* column may not exist */ }
 
             console.log('[DB] Production migrations applied.');
         } catch (e) {
