@@ -50,6 +50,7 @@
     display: block;
     object-fit: cover;
     background: #f1f5f9;
+    min-height: 220px;
 }
 
 .waterfall-footer {
