@@ -651,18 +651,19 @@ export const UI = {
                         ` : '<div class="text-slate-300">无预览</div>'}
                         
                         <!-- Top-Right Menu Button -->
-                        <div class="absolute top-2 right-2 z-30">
-                            <button onclick="UI.toggleProjectMenu('${p.id}', event)" class="w-5 h-5 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-slate-600 shadow-sm hover:bg-white transition-all">
-                                <i data-lucide="more-vertical" size="8"></i>
+                        <div class="absolute top-1.5 right-1.5 z-30">
+                            <button onclick="UI.toggleProjectMenu('${p.id}', event)" class="w-4 h-4 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-slate-600 shadow-sm hover:bg-white transition-all">
+                                <i data-lucide="more-vertical" size="6"></i>
                             </button>
                             <!-- Dropdown Menu -->
-                            <div id="project-menu-${p.id}" class="hidden absolute right-0 mt-1 w-24 bg-white rounded-md shadow-2xl border border-slate-100 py-1 animate-in fade-in zoom-in duration-200">
-                                <button onclick="UI.loadProject('${p.id}')" class="w-full px-2 py-1 text-left text-[10px] font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1"><i data-lucide="edit-3" size="6"></i> 编辑作品</button>
-                                <button onclick="UI.shareProject('${p.id}', ${!p.is_public})" class="w-full px-2 py-1 text-left text-[10px] font-bold ${p.is_public ? 'text-amber-600' : 'text-emerald-600'} hover:bg-slate-50 flex items-center gap-1">
-                                    <i data-lucide="${p.is_public ? 'eye-off' : 'share'}" size="6"></i> ${p.is_public ? '取消发布' : '发布社区'}
+                            <div id="project-menu-${p.id}" class="hidden absolute right-0 mt-1 w-20 bg-white rounded-md shadow-2xl border border-slate-100 py-0.5 animate-in fade-in zoom-in duration-200">
+                                <button onclick="UI.loadProject('${p.id}')" class="w-full px-1.5 py-0.5 text-left text-[9px] font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-0.5"><i data-lucide="edit-3" size="4"></i> 编辑作品</button>
+                                <button onclick="UI.shareProject('${p.id}', ${!p.is_public})" class="w-full px-1.5 py-0.5 text-left text-[9px] font-bold ${p.is_public ? 'text-amber-600' : 'text-emerald-600'} hover:bg-slate-50 flex items-center gap-0.5">
+                                    <i data-lucide="${p.is_public ? 'eye-off' : 'share'}" size="4"></i> ${p.is_public ? '取消发布' : '发布社区'}
                                 </button>
-                                <div class="h-px bg-slate-100 my-0.5"></div>
-                                <button onclick="UI.deleteProject('${p.id}')" class="w-full px-2 py-1 text-left text-[10px] font-bold text-red-500 hover:bg-red-50 flex items-center gap-1"><i data-lucide="trash-2" size="6"></i> 删除记录</button>
+                                <button onclick="UI.renameProject('${p.id}', '${p.name.replace(/'/g, "\\'")}')" class="w-full px-1.5 py-0.5 text-left text-[9px] font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-0.5"><i data-lucide="pencil" size="4"></i> 重命名</button>
+                                <div class="h-px bg-slate-100 my-0"></div>
+                                <button onclick="UI.deleteProject('${p.id}')" class="w-full px-1.5 py-0.5 text-left text-[9px] font-bold text-red-500 hover:bg-red-50 flex items-center gap-0.5"><i data-lucide="trash-2" size="4"></i> 删除记录</button>
                             </div>
                         </div>
 
@@ -1054,6 +1055,26 @@ export const UI = {
         }
     },
 
+    async renameProject(id, currentName) {
+        const name = await this.showPrompt("给作品换个名字吧", {
+            title: '重命名作品',
+            inputLabel: '作品名称',
+            initialValue: currentName,
+            placeholder: '输入新的作品名称'
+        });
+        if (!name || name === currentName) return;
+        try {
+            await window.API.saveProject({ id, name });
+            if (this.app && this.app._activeProjectId === id) {
+                this._lastSavedProjectName = name;
+            }
+            await this.loadUserProjects();
+            await this.refreshCommunity();
+        } catch (e) {
+            await this.showAlert("重命名失败：" + e.message, 'error', '重命名失败');
+        }
+    },
+
     async loadProject(id) {
         try {
             const projects = await window.API.getMyProjects();
@@ -1161,13 +1182,18 @@ export const UI = {
                         ` : '<div class="w-full aspect-[4/3] bg-slate-100"></div>'}
                     </div>
                     <div class="waterfall-footer">
-                        <div class="flex items-center gap-2">
-                            <div class="relative w-7 h-7 rounded-full bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100 border border-amber-200/70 flex items-center justify-center shrink-0 overflow-hidden">
-                                <div class="absolute inset-[4px] rounded-full bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center">
-                                    <i data-lucide="flower-2" size="12" class="text-white"></i>
+                        <div class="flex flex-col min-w-0 flex-1">
+                            <div class="flex items-center gap-2">
+                                <div class="relative w-7 h-7 rounded-full bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100 border border-amber-200/70 flex items-center justify-center shrink-0 overflow-hidden">
+                                    <div class="absolute inset-[4px] rounded-full bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center">
+                                        <i data-lucide="flower-2" size="12" class="text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="text-xs font-bold text-slate-600 truncate block max-w-[80px]">${p.author}</span>
+                                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mt-0.5">${new Date(p.createdAt).toLocaleDateString()}</span>
                                 </div>
                             </div>
-                            <span class="text-xs font-bold text-slate-600 truncate max-w-[80px]">${p.author}</span>
                         </div>
                         <button onclick="UI.likeCommunityPost('${p.id}', this)" class="like-btn ${p.hasLiked ? 'liked' : ''}">
                             <svg class="like-icon w-5 h-5" viewBox="0 0 24 24" fill="${p.hasLiked ? '#f43f5e' : 'none'}" stroke="currentColor" stroke-width="2">

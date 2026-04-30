@@ -48,6 +48,7 @@ router.get('/', softAuthMiddleware, async (req, res) => {
             name: p.name,
             thumbnail: p.thumbnail,
             author: p.User ? p.User.username : 'Unknown',
+            createdAt: p.createdAt,
             likeCount: likeCountMap[p.id] || 0,
             hasLiked: userLikes.includes(p.id)
         }));
