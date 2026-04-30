@@ -1157,10 +1157,12 @@ export const UI = {
 
                 return `
                 <div class="waterfall-item group" id="community-card-${p.id}">
+                     <div class="waterfall-header">
+                        <span>${p.name}</span>
+                     </div>
                      <div class="relative w-full overflow-hidden touch-pan-y" 
                          ontouchstart="UI.handleTouchStart(event)" 
                          ontouchend="UI.handleTouchEnd(event, '${p.id}', 'community')">
-                        <span class="absolute top-2 left-1/2 -translate-x-1/2 z-10 text-[11px] font-bold text-black truncate max-w-[150px] block">${p.name}</span>
                         ${thumbs.length > 0 ? `
                             <img id="community-thumb-img-${p.id}" src="${thumbs[0]}" data-index="0" data-thumbs='${JSON.stringify(thumbs.filter(Boolean))}' class="waterfall-img transition-all duration-500">
                             ${thumbs.length > 1 ? `
