@@ -1,7 +1,7 @@
 import { UI } from '../ui/controller.js';
 
 const SYSTEM_PROMPT = "你是一位精通胶东花饽饽配色和食材寓意的非遗大师。";
-const USER_PROMPT = "我是胶东花饽饽学徒，这是我的作品截图。请以大师身份给我一句关于花饽饽食材配色与寓意的简短指导，50字以内。";
+const USER_PROMPT = "我是胶东花饽饽学徒，这是我的作品截图。请以大师身份给我一句关于花饽饽食材配色与寓意的简短指导，100字以内。";
 const FALLBACK_TEXT = "配色考究，面相饱满。";
 
 export const Master = {

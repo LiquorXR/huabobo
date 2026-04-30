@@ -39,7 +39,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'huabobo_secret_key_ch
     }
 }
 
-const { syncDatabase, runMigrations } = require('./src/models');
+const { syncDatabase, runMigrations, TokenUsage } = require('./src/models');
 const { router: authRoutes, authMiddleware } = require('./src/routes/auth');
 const projectRoutes = require('./src/routes/projects');
 const communityRoutes = require('./src/routes/community');
@@ -161,7 +161,7 @@ app.post('/api/ask-master', authMiddleware, async (req, res) => {
         const apiKey = process.env.OPENAI_API_KEY;
         const apiUrl = (process.env.OPENAI_API_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
         const resolvedModel = model || process.env.OPENAI_MODEL || 'gpt-4o-mini';
-        const maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS) || 300;
+        const maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS) || 200;
 
         if (!apiKey) {
             return res.status(500).json({ error: { message: "OPENAI_API_KEY is not configured" } });
@@ -174,6 +174,10 @@ app.post('/api/ask-master', authMiddleware, async (req, res) => {
             temperature: 0.7,
             stream: !!useStream
         };
+
+        if (useStream) {
+            requestBody.stream_options = { include_usage: true };
+        }
 
         if (enableThinking || process.env.OPENAI_ENABLE_THINKING === 'true') {
             requestBody.thinking = { type: 'enabled' };
@@ -212,6 +216,16 @@ app.post('/api/ask-master', authMiddleware, async (req, res) => {
 
             if (apiResponse.ok && data.choices && data.choices.length > 0) {
                 aiCache.set(cacheKey, data);
+                if (data.usage) {
+                    TokenUsage.create({
+                        userId: req.user?.userId || null,
+                        model: resolvedModel,
+                        prompt_tokens: data.usage.prompt_tokens || 0,
+                        completion_tokens: data.usage.completion_tokens || 0,
+                        total_tokens: data.usage.total_tokens || 0,
+                        streaming: false
+                    }).catch(() => {});
+                }
                 return res.json(data);
             }
 
@@ -250,15 +264,40 @@ app.post('/api/ask-master', authMiddleware, async (req, res) => {
         req.socket?.setNoDelay?.(true);
         const reader = apiResponse.body.getReader();
         const decoder = new TextDecoder();
+        let streamBuffer = '';
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            res.write(decoder.decode(value, { stream: true }));
+            const chunk = decoder.decode(value, { stream: true });
+            streamBuffer += chunk;
+            res.write(chunk);
             if (typeof res.flush === 'function') res.flush();
         }
 
         res.end();
+
+        if (streamBuffer) {
+            const lines = streamBuffer.split('\n');
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed.startsWith('data: ') || trimmed.includes('[DONE]')) continue;
+                try {
+                    const json = JSON.parse(trimmed.slice(6));
+                    if (json.usage) {
+                        TokenUsage.create({
+                            userId: req.user?.userId || null,
+                            model: resolvedModel,
+                            prompt_tokens: json.usage.prompt_tokens || 0,
+                            completion_tokens: json.usage.completion_tokens || 0,
+                            total_tokens: json.usage.total_tokens || 0,
+                            streaming: true
+                        }).catch(() => {});
+                        break;
+                    }
+                } catch (_) {}
+            }
+        }
     } catch (e) {
         console.error('[AskMaster] Stream error:', e);
         if (res.headersSent) {

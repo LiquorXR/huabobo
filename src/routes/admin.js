@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
-const { User, Project, Like, ModelResource, CarouselImage, sequelize } = require('../models');
+const { User, Project, Like, ModelResource, CarouselImage, TokenUsage, sequelize } = require('../models');
 const { authMiddleware } = require('./auth');
 const multer = require('multer');
 const router = express.Router();
@@ -55,12 +55,17 @@ router.get('/stats', authMiddleware, adminMiddleware, async (req, res) => {
         const userCount = await User.count();
         const projectCount = await Project.count();
         const likeCount = await Like.count();
+        const totalTokensResult = await TokenUsage.findOne({
+            attributes: [[sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('total_tokens')), 0), 'sum']],
+            raw: true
+        });
+        const tokenCount = parseInt(totalTokensResult.sum, 10) || 0;
         
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         sevenDaysAgo.setHours(0, 0, 0, 0);
 
-        const [userTrend, projectTrend] = await Promise.all([
+        const [userTrend, projectTrend, likeTrend, tokenTrend] = await Promise.all([
             User.findAll({
                 attributes: [
                     [sequelize.fn('DATE', sequelize.col('createdAt')), 'date'],
@@ -78,6 +83,24 @@ router.get('/stats', authMiddleware, adminMiddleware, async (req, res) => {
                 where: { createdAt: { [Op.gte]: sevenDaysAgo } },
                 group: [sequelize.fn('DATE', sequelize.col('createdAt'))],
                 order: [[sequelize.fn('DATE', sequelize.col('createdAt')), 'ASC']]
+            }),
+            Like.findAll({
+                attributes: [
+                    [sequelize.fn('DATE', sequelize.col('createdAt')), 'date'],
+                    [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+                ],
+                where: { createdAt: { [Op.gte]: sevenDaysAgo } },
+                group: [sequelize.fn('DATE', sequelize.col('createdAt'))],
+                order: [[sequelize.fn('DATE', sequelize.col('createdAt')), 'ASC']]
+            }),
+            TokenUsage.findAll({
+                attributes: [
+                    [sequelize.fn('DATE', sequelize.col('createdAt')), 'date'],
+                    [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('total_tokens')), 0), 'tokens']
+                ],
+                where: { createdAt: { [Op.gte]: sevenDaysAgo } },
+                group: [sequelize.fn('DATE', sequelize.col('createdAt'))],
+                order: [[sequelize.fn('DATE', sequelize.col('createdAt')), 'ASC']]
             })
         ]);
 
@@ -85,6 +108,10 @@ router.get('/stats', authMiddleware, adminMiddleware, async (req, res) => {
         userTrend.forEach(r => { userMap[r.get('date')] = parseInt(r.get('count'), 10); });
         const projectMap = {};
         projectTrend.forEach(r => { projectMap[r.get('date')] = parseInt(r.get('count'), 10); });
+        const tokenMap = {};
+        tokenTrend.forEach(r => { tokenMap[r.get('date')] = parseInt(r.get('tokens'), 10); });
+        const likeMap = {};
+        likeTrend.forEach(r => { likeMap[r.get('date')] = parseInt(r.get('count'), 10); });
 
         const trendData = [];
         for (let i = 6; i >= 0; i--) {
@@ -94,7 +121,9 @@ router.get('/stats', authMiddleware, adminMiddleware, async (req, res) => {
             trendData.push({
                 date: date.toLocaleDateString(),
                 users: userMap[dateStr] || 0,
-                projects: projectMap[dateStr] || 0
+                projects: projectMap[dateStr] || 0,
+                likes: likeMap[dateStr] || 0,
+                tokens: tokenMap[dateStr] || 0
             });
         }
 
@@ -102,6 +131,7 @@ router.get('/stats', authMiddleware, adminMiddleware, async (req, res) => {
             userCount,
             projectCount,
             likeCount,
+            tokenCount,
             trendData
         });
     } catch (e) {

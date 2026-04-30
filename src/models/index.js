@@ -57,6 +57,21 @@ const CarouselImage = sequelize.define('CarouselImage', {
     file_path: { type: DataTypes.STRING, allowNull: true }
 });
 
+const TokenUsage = sequelize.define('TokenUsage', {
+    id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+    userId: { type: DataTypes.UUID, allowNull: true },
+    model: { type: DataTypes.STRING },
+    prompt_tokens: { type: DataTypes.INTEGER, defaultValue: 0 },
+    completion_tokens: { type: DataTypes.INTEGER, defaultValue: 0 },
+    total_tokens: { type: DataTypes.INTEGER, defaultValue: 0 },
+    streaming: { type: DataTypes.BOOLEAN, defaultValue: false }
+}, {
+    indexes: [
+        { fields: ['createdAt'] },
+        { fields: ['userId'] }
+    ]
+});
+
 
 // Relationships
 User.hasMany(Project, { foreignKey: 'userId' });
@@ -67,6 +82,9 @@ Like.belongsTo(User, { foreignKey: 'userId' });
 
 Project.hasMany(Like, { foreignKey: 'projectId', onDelete: 'CASCADE' });
 Like.belongsTo(Project, { foreignKey: 'projectId' });
+
+User.hasMany(TokenUsage, { foreignKey: 'userId' });
+TokenUsage.belongsTo(User, { foreignKey: 'userId' });
 
 
 const dedupeSQLiteUsers = async () => {
@@ -217,4 +235,4 @@ const syncDatabase = async () => {
     console.log("Database models synchronized.");
 };
 
-module.exports = { User, Project, Like, ModelResource, CarouselImage, syncDatabase, runMigrations, sequelize };
+module.exports = { User, Project, Like, ModelResource, CarouselImage, TokenUsage, syncDatabase, runMigrations, sequelize };
