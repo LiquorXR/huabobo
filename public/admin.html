@@ -351,7 +351,8 @@
         </div>
 
         <!-- Account Settings Modal -->
-        <div id="account-settings-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div id="account-settings-modal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm" onclick="closeAccountSettings()">
+            <div class="min-h-full flex items-center justify-center p-4" onclick="event.stopPropagation()">
             <div class="bg-white rounded-3xl p-8 w-full max-w-lg shadow-2xl">
                 <h3 class="text-2xl font-bold mb-6">账号设置</h3>
                 <div class="space-y-5">
@@ -377,6 +378,7 @@
                         <button type="button" id="account-submit-btn" onclick="submitAccountSettingsAdmin()" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">保存修改</button>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
 
@@ -738,7 +740,8 @@
     }
 
     function switchTab(tab) {
-        // Hide all views
+        closeAccountSettings();
+
         document.getElementById('content-dashboard').classList.add('hidden');
         document.getElementById('content-users').classList.add('hidden');
         document.getElementById('content-projects').classList.add('hidden');
