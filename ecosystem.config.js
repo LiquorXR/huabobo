@@ -2,9 +2,9 @@ module.exports = {
     apps: [{
         name: 'huabobo',
         script: 'server.js',
-        instances: 'max',
+        instances: 1,
         exec_mode: 'cluster',
-        max_memory_restart: '512M',
+        max_memory_restart: '300M',
         env: {
             NODE_ENV: 'production'
         }
