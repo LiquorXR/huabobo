@@ -398,7 +398,7 @@
                     </div>
                     <div id="preview-area" class="hidden">
                         <label class="block text-xs font-bold text-gray-400 uppercase mb-1">预览图生成</label>
-                        <div id="upload-preview-container" class="w-full aspect-square bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-slate-200">
+                        <div id="upload-preview-container" class="relative w-full aspect-square bg-slate-200 rounded-2xl flex items-center justify-center border border-gray-200 overflow-hidden group">
                             <span class="text-xs text-slate-400">正在解析 3D 预览...</span>
                         </div>
                     </div>
@@ -902,15 +902,15 @@
             const ext = file.name.split('.').pop().toLowerCase();
             
             const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xf8fafc);
+            scene.background = null;
             const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(300, 300);
             
             const ambient = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambient);
-            const sun = new THREE.DirectionalLight(0xffffff, 0.5);
-            sun.position.set(5, 10, 7);
+            const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+            sun.position.set(5, 5, 5);
             scene.add(sun);
 
             let mesh;
@@ -927,13 +927,35 @@
             }
 
             if (mesh) {
-                scene.add(mesh);
+                // Apply a default material to match app.js
+                mesh.traverse(child => {
+                    if (child.isMesh) {
+                        if (!child.material || child.material.type === 'MeshBasicMaterial') {
+                            child.material = new THREE.MeshStandardMaterial({ 
+                                color: 0xffffff, 
+                                roughness: 0.6,
+                                metalness: 0.02
+                            });
+                        }
+                    }
+                });
+
+                mesh.position.set(0, 0, 0);
+                mesh.rotation.set(0, 0, 0);
+                mesh.scale.setScalar(1);
+
                 const box = new THREE.Box3().setFromObject(mesh);
                 const center = box.getCenter(new THREE.Vector3());
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
-                camera.position.set(center.x + maxDim, center.y + maxDim, center.z + maxDim);
-                camera.lookAt(center);
+                const scale = 3 / maxDim;
+                mesh.scale.setScalar(scale);
+                mesh.position.sub(center.multiplyScalar(scale));
+
+                scene.add(mesh);
+                
+                camera.position.set(4, 3, 5);
+                camera.lookAt(0, 0, 0);
                 
                 renderer.render(scene, camera);
                 currentGeneratedThumbnail = renderer.domElement.toDataURL('image/webp', 0.7);

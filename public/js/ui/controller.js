@@ -629,7 +629,7 @@ export const UI = {
                 return `
                 <div class="project-card relative group bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm transition-all hover:shadow-xl" id="project-card-${p.id}">
                     <!-- Image Container with Arrows -->
-                    <div class="relative w-full h-40 bg-[#f8fafc] flex items-center justify-center overflow-hidden">
+                    <div class="relative w-full h-40 bg-slate-200 flex items-center justify-center overflow-hidden">
                         ${thumbs.length > 0 ? `
                             <img id="project-thumb-img-${p.id}" src="${thumbs[0]}" data-index="0" data-thumbs='${JSON.stringify(thumbs.filter(Boolean))}' class="w-full h-full object-contain transition-all duration-500">
                             ${thumbs.length > 1 ? `
@@ -1296,7 +1296,7 @@ export const UI = {
             grid.innerHTML = this.app.modelManifest.models.map(model => `
                 <div id="model-item-${model.id}" onclick="App.addNewLayer('${model.id}'); UI.toggleModelDialog()" 
                      class="group bg-slate-50 hover:bg-amber-50 p-4 rounded-[2rem] border-2 border-transparent hover:border-amber-200 transition-all cursor-pointer flex flex-col items-center gap-3">
-                    <div class="thumbnail-container w-full aspect-square bg-[#f8fafc] rounded-2xl shadow-sm flex items-center justify-center group-hover:scale-95 transition-transform overflow-hidden">
+                    <div class="thumbnail-container w-full aspect-square bg-slate-200 rounded-2xl shadow-sm flex items-center justify-center group-hover:scale-95 transition-transform overflow-hidden">
                         ${model.thumbnail ? `<img src="${model.thumbnail}" class="w-full h-full object-contain p-2">` : '<div class="w-8 h-8 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin"></div>'}
                     </div>
                     <span class="text-xs font-black text-slate-700 uppercase tracking-widest">${model.name}</span>
@@ -1364,7 +1364,7 @@ export const UI = {
                 <div onclick="App.selectLayer(${i})" 
                      class="group relative flex-none w-14 h-14 rounded-2xl border-2 transition-all cursor-pointer ${i === activeIndex ? 'border-amber-500 bg-amber-50 scale-105 shadow-xl shadow-amber-500/20' : 'border-slate-100/50 hover:border-amber-200 bg-white/50 backdrop-blur-md'}" 
                      style="padding: 2px;">
-                    <div class="w-full h-full rounded-xl overflow-hidden relative bg-[#f8fafc]">
+                    <div class="w-full h-full rounded-xl overflow-hidden relative bg-slate-200">
                         ${thumb ? `<img src="${thumb}" class="w-full h-full object-contain p-1 z-10 relative">` : ''}
                         <!-- Color Background Hint -->
                         <div class="absolute inset-0 opacity-10" style="background: ${colorHex}"></div>

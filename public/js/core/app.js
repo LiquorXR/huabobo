@@ -547,7 +547,7 @@ export const App = {
             this.snapshotRenderer.setSize(256, 256);
             this.snapshotScene = new THREE.Scene();
             // 设置淡灰色背景
-            this.snapshotScene.background = new THREE.Color(0xf8fafc); 
+            this.snapshotScene.background = null;
             this.snapshotCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
             
             const ambient = new THREE.AmbientLight(0xffffff, 0.8);
