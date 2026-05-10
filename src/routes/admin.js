@@ -209,7 +209,7 @@ router.delete('/user/:id', authMiddleware, adminMiddleware, async (req, res) => 
 router.get('/resources/models', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const models = await ModelResource.findAll({
-            attributes: ['id', 'name', 'file_name', 'mime_type', 'createdAt'],
+            attributes: ['id', 'name', 'file_name', 'mime_type', 'metadata', 'createdAt'],
             order: [['createdAt', 'DESC']]
         });
         res.json(models);

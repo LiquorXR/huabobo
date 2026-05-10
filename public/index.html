@@ -16,6 +16,7 @@
     <script defer src="lib/three/OrbitControls.js"></script>
     <script defer src="lib/three/OBJExporter.js"></script>
     <script defer src="lib/three/STLExporter.js"></script>
+    <script defer src="lib/three/GLTFExporter.js"></script>
     <!-- MediaPipe scripts loaded dynamically via HandTracker.enable() -->
     <!-- UI Framework & Icons -->
     <script src="lib/tailwind.min.js"></script>
@@ -104,12 +105,12 @@
                         </div>
                         <i data-lucide="printer" size="14" class="text-emerald-500"></i>
                     </div>
-                    <div class="export-item" onclick="App.exportModel('bambu')">
+                    <div class="export-item" onclick="App.exportModel('glb')">
                         <div class="flex flex-col">
-                            <span class="text-orange-600 font-bold">拓竹 3MF</span>
-                            <span class="text-[9px] text-orange-400">一键切片与打印</span>
+                            <span class="text-purple-600 font-bold">GLB 模型</span>
+                            <span class="text-[9px] text-purple-400">通用 3D 场景格式</span>
                         </div>
-                        <i data-lucide="zap" size="14" class="text-orange-500 animate-pulse"></i>
+                        <i data-lucide="file-box" size="14" class="text-purple-500"></i>
                     </div>
                 </div>
             </div>

@@ -631,20 +631,22 @@ export const App = {
             exportGroup.add(clone);
         });
 
-        if (format === 'bambu') {
+        if (format === 'glb') {
             try {
-                const { exportTo3MF } = await import('../../lib/three-3mf-exporter.js');
-                const blob = await exportTo3MF(exportGroup);
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `我的花饽饽_${new Date().getTime()}.3mf`;
-                link.click();
-                URL.revokeObjectURL(url);
+                const exporter = new THREE.GLTFExporter();
+                exporter.parse(exportGroup, (result) => {
+                    const blob = new Blob([result], { type: 'application/octet-stream' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `我的花饽饽_${new Date().getTime()}.glb`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    UI.hideExportMenu();
+                }, { binary: true });
             } catch (err) {
-                console.error("Export 3MF failed:", err);
-                await UI.showAlert("生成 3MF 失败，请尝试使用 STL 导出或检查控制台。", 'error', '导出失败');
-            } finally {
+                console.error("Export GLB failed:", err);
+                await UI.showAlert("生成 GLB 失败，请尝试使用 OBJ 或 STL 导出。", 'error', '导出失败');
                 UI.hideExportMenu();
             }
             return;

@@ -318,6 +318,7 @@
                         <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                             <tr>
                                 <th class="px-6 py-4">模型名称</th>
+                                <th class="px-6 py-4">模型简介</th>
                                 <th class="px-6 py-4">文件名</th>
                                 <th class="px-6 py-4">上传时间</th>
                                 <th class="px-6 py-4 text-right">操作</th>
@@ -403,6 +404,10 @@
                         </div>
                     </div>
 
+                    <div id="description-field" class="hidden">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">模型简介</label>
+                        <textarea id="resource-description" rows="3" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition resize-none" placeholder="简要描述该模型的特点和用途"></textarea>
+                    </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-400 uppercase mb-1">文件</label>
                         <input type="file" id="resource-file" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
@@ -794,16 +799,23 @@
             });
             const models = await res.json();
             const tbody = document.getElementById('models-table-body');
-            tbody.innerHTML = models.map(m => `
+            tbody.innerHTML = models.map(m => {
+                let desc = '';
+                try {
+                    const meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : (m.metadata || {});
+                    desc = meta.description || '';
+                } catch(e) {}
+                return `
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 font-bold text-gray-800">${m.name}</td>
+                    <td class="px-6 py-4 text-xs text-gray-500 max-w-[200px] truncate" title="${desc}">${desc || '<span class="text-gray-300 italic">暂无</span>'}</td>
                     <td class="px-6 py-4 text-xs text-gray-400">${m.file_name}</td>
                     <td class="px-6 py-4 text-xs">${new Date(m.createdAt).toLocaleString()}</td>
                     <td class="px-6 py-4 text-right">
                         <button onclick="deleteResource('models', '${m.id}')" class="text-red-500 hover:text-red-700 font-medium">删除</button>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         } catch(e) { console.error(e); }
     }
 
@@ -833,6 +845,7 @@
         document.getElementById('upload-type').value = type;
         document.getElementById('modal-title').innerText = type === 'models' ? '上传 3D 模型' : '上传轮播图';
         document.getElementById('name-field').style.display = type === 'models' ? 'block' : 'none';
+        document.getElementById('description-field').style.display = type === 'models' ? 'block' : 'none';
         document.getElementById('order-field').style.display = type === 'carousel' ? 'block' : 'none';
         document.getElementById('preview-area').style.display = type === 'models' ? 'block' : 'none';
         document.getElementById('file-hint').innerText = type === 'models' ? '支持 .glb, .gltf, .obj 格式' : '支持 .jpg, .png 格式';
@@ -982,6 +995,10 @@
         formData.append('file', fileInput.files[0]);
         if (type === 'models') {
             formData.append('name', document.getElementById('resource-name').value);
+            const description = document.getElementById('resource-description').value.trim();
+            if (description) {
+                formData.append('metadata', JSON.stringify({ description: description }));
+            }
             if (currentGeneratedThumbnail) {
                 formData.append('thumbnail', currentGeneratedThumbnail);
             }

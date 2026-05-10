@@ -1275,18 +1275,26 @@ export const UI = {
 
             // Format to match expected manifest structure
             this.app.modelManifest = {
-                models: data.map(m => ({
-                    id: m.id,
-                    name: m.name,
-                    file_name: m.file_name,
-                    path: `/api/resources/models/${m.id}`,
-                    thumbnail: m.thumbnail,
-                    type: 'custom'
-                }))
+                models: data.map(m => {
+                    let description = '';
+                    try {
+                        const meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata || '{}') : (m.metadata || {});
+                        description = meta.description || '';
+                    } catch(e) {}
+                    return {
+                        id: m.id,
+                        name: m.name,
+                        file_name: m.file_name,
+                        path: `/api/resources/models/${m.id}`,
+                        thumbnail: m.thumbnail,
+                        description: description,
+                        type: 'custom'
+                    };
+                })
 
             };
             // Add default primitive
-            this.app.modelManifest.models.unshift({ id: 'default', name: '圆球面团', type: 'primitive' });
+            this.app.modelManifest.models.unshift({ id: 'default', name: '圆球面团', description: '基础圆球造型', type: 'primitive' });
 
             if (this.app.modelManifest.models.length === 0) {
                 grid.innerHTML = '<div class="col-span-full text-center text-slate-400 py-10">暂无可用的模型资源</div>';
@@ -1300,6 +1308,7 @@ export const UI = {
                         ${model.thumbnail ? `<img src="${model.thumbnail}" class="w-full h-full object-contain p-2">` : '<div class="w-8 h-8 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin"></div>'}
                     </div>
                     <span class="text-xs font-black text-slate-700 uppercase tracking-widest">${model.name}</span>
+                    ${model.description ? `<span class="text-[10px] text-slate-400 text-center leading-tight line-clamp-2">${model.description}</span>` : ''}
                 </div>
             `).join('');
 
