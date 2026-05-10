@@ -797,13 +797,15 @@
                     const meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : (m.metadata || {});
                     desc = meta.description || '';
                 } catch(e) {}
+                const modelJson = JSON.stringify(m).replace(/"/g, '&quot;');
                 return `
-                <tr class="hover:bg-gray-50">
+                <tr class="hover:bg-gray-50" data-model="${modelJson}">
                     <td class="px-6 py-4 font-bold text-gray-800">${m.name}</td>
                     <td class="px-6 py-4 text-xs text-gray-500 max-w-[200px] truncate" title="${desc}">${desc || '<span class="text-gray-300 italic">暂无</span>'}</td>
                     <td class="px-6 py-4 text-xs text-gray-400">${m.file_name}</td>
                     <td class="px-6 py-4 text-xs">${new Date(m.createdAt).toLocaleString()}</td>
-                    <td class="px-6 py-4 text-right">
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="editModel(this)" class="text-blue-500 hover:text-blue-700 font-medium">编辑</button>
                         <button onclick="deleteResource('models', '${m.id}')" class="text-red-500 hover:text-red-700 font-medium">删除</button>
                     </td>
                 </tr>
@@ -833,15 +835,35 @@
         } catch(e) { console.error(e); }
     }
 
-    function openUploadModal(type) {
+    function editModel(btn) {
+        const tr = btn.closest('tr');
+        const data = JSON.parse(tr.dataset.model);
+        openUploadModal('models', data);
+    }
+
+    function openUploadModal(type, editData = null) {
         document.getElementById('upload-type').value = type;
-        document.getElementById('modal-title').innerText = type === 'models' ? '上传 3D 模型' : '上传轮播图';
+        const form = document.getElementById('upload-form');
+        const fileInput = document.getElementById('resource-file');
+        
+        if (editData && editData.id) {
+            form.dataset.editId = editData.id;
+            document.getElementById('modal-title').innerText = type === 'models' ? '编辑 3D 模型' : '编辑轮播图';
+            document.getElementById('upload-submit-btn').innerText = '保存修改';
+            fileInput.required = false;
+        } else {
+            delete form.dataset.editId;
+            document.getElementById('modal-title').innerText = type === 'models' ? '上传 3D 模型' : '上传轮播图';
+            document.getElementById('upload-submit-btn').innerText = '开始上传';
+            fileInput.required = true;
+        }
+
         document.getElementById('name-field').style.display = type === 'models' ? 'block' : 'none';
         document.getElementById('description-field').style.display = type === 'models' ? 'flex' : 'none';
         document.getElementById('order-field').style.display = type === 'carousel' ? 'block' : 'none';
         document.getElementById('preview-area').style.display = type === 'models' ? 'flex' : 'none';
-        document.getElementById('file-hint').innerText = type === 'models' ? '支持 .glb, .gltf, .obj 格式' : '支持 .jpg, .png 格式';
-        document.getElementById('resource-file').accept = type === 'models' ? '.glb,.gltf,.obj' : '.jpg,.jpeg,.png';
+        document.getElementById('file-hint').innerText = type === 'models' ? (editData ? '支持 .glb, .gltf, .obj 格式。不修改文件请留空。' : '支持 .glb, .gltf, .obj 格式') : '支持 .jpg, .png 格式';
+        fileInput.accept = type === 'models' ? '.glb,.gltf,.obj' : '.jpg,.jpeg,.png';
         
         const modalContainer = document.querySelector('#upload-modal > div');
         if (type === 'models') {
@@ -854,8 +876,27 @@
 
         document.getElementById('upload-modal').classList.remove('hidden');
         
-        // Clear previous preview
-        document.getElementById('upload-preview-container').innerHTML = '<span class="text-xs text-slate-400">等待选择文件...</span>';
+        // Fill existing data or clear
+        if (editData && type === 'models') {
+            document.getElementById('resource-name').value = editData.name || '';
+            let desc = '';
+            try {
+                const meta = typeof editData.metadata === 'string' ? JSON.parse(editData.metadata) : (editData.metadata || {});
+                desc = meta.description || '';
+            } catch(e) {}
+            document.getElementById('resource-description').value = desc;
+            document.getElementById('upload-preview-container').innerHTML = `<span class="text-xs text-slate-400">当前文件：${editData.file_name} <br>选择新文件将重新生成预览</span>`;
+        } else {
+            if (type === 'models') {
+                document.getElementById('resource-name').value = '';
+                document.getElementById('resource-description').value = '';
+                document.getElementById('upload-preview-container').innerHTML = '<span class="text-xs text-slate-400">等待选择文件...</span>';
+            } else {
+                document.getElementById('resource-order').value = '0';
+            }
+        }
+        
+        fileInput.value = '';
         setUploadState(false);
         currentGeneratedThumbnail = null;
     }
@@ -863,7 +904,9 @@
     function closeUploadModal() {
         if (isUploading) return;
         document.getElementById('upload-modal').classList.add('hidden');
-        document.getElementById('upload-form').reset();
+        const form = document.getElementById('upload-form');
+        form.reset();
+        delete form.dataset.editId;
         currentGeneratedThumbnail = null;
         setUploadState(false);
     }
@@ -876,10 +919,12 @@
         const status = document.getElementById('upload-status');
         const fileInput = document.getElementById('resource-file');
         const cancelBtn = document.querySelector('#upload-form button[type="button"]');
+        const form = document.getElementById('upload-form');
+        const isEditing = !!form.dataset.editId;
 
         if (submitBtn) {
             submitBtn.disabled = uploading;
-            submitBtn.innerText = uploading ? '上传中...' : '开始上传';
+            submitBtn.innerText = uploading ? (isEditing ? '保存中...' : '上传中...') : (isEditing ? '保存修改' : '开始上传');
             submitBtn.classList.toggle('opacity-70', uploading);
             submitBtn.classList.toggle('cursor-not-allowed', uploading);
         }
@@ -991,10 +1036,16 @@
         if (isUploading) return;
         const type = document.getElementById('upload-type').value;
         const fileInput = document.getElementById('resource-file');
-        if (!fileInput.files[0]) return;
+        const form = document.getElementById('upload-form');
+        const editId = form.dataset.editId;
+        
+        if (!editId && !fileInput.files[0]) return;
 
         const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        if (fileInput.files[0]) {
+            formData.append('file', fileInput.files[0]);
+        }
+        
         if (type === 'models') {
             formData.append('name', document.getElementById('resource-name').value);
             const description = document.getElementById('resource-description').value.trim();
@@ -1008,11 +1059,14 @@
             formData.append('order', document.getElementById('resource-order').value);
         }
 
-
         try {
-            setUploadState(true, type === 'models' ? '正在上传模型并保存预览，请稍候...' : '正在上传轮播图，请稍候...');
-            const res = await fetch(`/api/admin/resources/${type}`, {
-                method: 'POST',
+            setUploadState(true, type === 'models' ? (editId ? '正在保存修改，请稍候...' : '正在上传模型并保存预览，请稍候...') : '正在处理，请稍候...');
+            
+            const url = editId ? `/api/admin/resources/${type}/${editId}` : `/api/admin/resources/${type}`;
+            const method = editId ? 'PUT' : 'POST';
+            
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Authorization': 'Bearer ' + token },
                 body: formData
             });
@@ -1021,16 +1075,16 @@
                 closeUploadModal();
                 if (type === 'models') loadModels();
                 else loadCarousel();
-                await showAdminAlert('上传完成', 'success', '上传成功');
+                await showAdminAlert(editId ? '修改完成' : '上传完成', 'success', editId ? '修改成功' : '上传成功');
             } else {
                 const data = await res.json();
                 setUploadState(false);
-                await showAdminAlert(data.error || "上传失败", 'error', '上传失败');
+                await showAdminAlert(data.error || (editId ? '修改失败' : '上传失败'), 'error', editId ? '修改失败' : '上传失败');
             }
         } catch(e) {
             setUploadState(false);
             console.error(e);
-            await showAdminAlert('上传失败，请稍后重试', 'error', '上传失败');
+            await showAdminAlert(editId ? '修改失败，请稍后重试' : '上传失败，请稍后重试', 'error', editId ? '修改失败' : '上传失败');
         }
     }
 

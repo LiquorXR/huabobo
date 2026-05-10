@@ -245,6 +245,47 @@ router.post('/resources/models', authMiddleware, adminMiddleware, upload.single(
     }
 });
 
+router.put('/resources/models/:id', authMiddleware, adminMiddleware, upload.single('file'), async (req, res) => {
+    try {
+        const { name, metadata, thumbnail } = req.body;
+        const model = await ModelResource.findByPk(req.params.id);
+        if (!model) {
+            if (req.file) fs.unlinkSync(req.file.path);
+            return res.status(404).json({ error: "Model not found" });
+        }
+
+        const updates = {};
+        if (name) updates.name = name;
+        if (metadata) updates.metadata = metadata;
+        if (thumbnail) updates.thumbnail = thumbnail;
+
+        if (req.file) {
+            const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+            const filePath = `/uploads/${req.file.filename}`;
+            updates.file_name = originalName;
+            updates.mime_type = req.file.mimetype;
+            updates.file_path = filePath;
+            
+            // Delete old file if new one is uploaded
+            if (model.file_path) {
+                const absolutePath = path.join(process.cwd(), model.file_path);
+                try {
+                    if (fs.existsSync(absolutePath)) {
+                        fs.unlinkSync(absolutePath);
+                    }
+                } catch (_) {}
+            }
+        }
+
+        await model.update(updates);
+
+        res.json({ success: true, id: model.id });
+    } catch (e) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        console.error('[Admin]', e); res.status(500).json({ error: "服务器内部错误，请稍后重试" });
+    }
+});
+
 router.delete('/resources/models/:id', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const model = await ModelResource.findByPk(req.params.id);
