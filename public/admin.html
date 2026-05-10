@@ -163,19 +163,6 @@
                 padding: 1rem;
             }
 
-            #upload-modal > div {
-                max-height: calc(100dvh - 2rem);
-                overflow-y: auto;
-                padding: 1.25rem;
-                border-radius: 1.75rem;
-            }
-
-            #upload-form .flex.gap-4.mt-8 {
-                flex-direction: column-reverse;
-                gap: 0.75rem;
-                margin-top: 1.25rem;
-            }
-
             #admin-dialog {
                 padding: 1.5rem;
                 border-radius: 1.75rem;
@@ -384,40 +371,45 @@
         </div>
 
         <!-- Upload Modal (Hidden) -->
-        <div id="upload-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
-            <div class="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
-                <h3 id="modal-title" class="text-2xl font-bold mb-6">上传资源</h3>
-                <form id="upload-form" onsubmit="handleUpload(event)" class="space-y-4">
+        <div id="upload-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl flex flex-col max-h-[calc(100dvh-2rem)]">
+                <h3 id="modal-title" class="text-xl md:text-2xl font-bold mb-4 md:mb-6 shrink-0">上传资源</h3>
+                <form id="upload-form" onsubmit="handleUpload(event)" class="flex flex-col md:flex-row gap-6 overflow-y-auto min-h-0 pr-1 pb-1">
                     <input type="hidden" id="upload-type">
-                    <div id="name-field">
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">显示名称</label>
-                        <input type="text" id="resource-name" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
-                    </div>
-                    <div id="order-field" class="hidden">
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">排序权重</label>
-                        <input type="number" id="resource-order" value="0" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
-                    </div>
-                    <div id="preview-area" class="hidden">
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">预览图生成</label>
-                        <div id="upload-preview-container" class="relative w-full aspect-square bg-slate-200 rounded-2xl flex items-center justify-center border border-gray-200 overflow-hidden group">
-                            <span class="text-xs text-slate-400">正在解析 3D 预览...</span>
+                    
+                    <!-- Left side: Preview Area -->
+                    <div id="preview-area" class="hidden w-full md:w-1/2 flex-col">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1 shrink-0">预览图生成</label>
+                        <div id="upload-preview-container" class="relative w-full aspect-square md:aspect-auto md:flex-1 bg-slate-200 rounded-2xl flex items-center justify-center border border-gray-200 overflow-hidden group min-h-[200px]">
+                            <span class="text-xs text-slate-400">等待选择文件...</span>
                         </div>
                     </div>
 
-                    <div id="description-field" class="hidden">
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">模型简介</label>
-                        <textarea id="resource-description" rows="3" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition resize-none" placeholder="简要描述该模型的特点和用途"></textarea>
+                    <!-- Right side: Fields -->
+                    <div class="w-full md:flex-1 space-y-4 flex flex-col">
+                        <div id="name-field">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">显示名称</label>
+                            <input type="text" id="resource-name" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        </div>
+                        <div id="order-field" class="hidden">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">排序权重</label>
+                            <input type="number" id="resource-order" value="0" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        </div>
+                        <div id="description-field" class="hidden flex-1 flex flex-col">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1 shrink-0">模型简介</label>
+                            <textarea id="resource-description" rows="3" class="flex-1 w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition resize-none min-h-[5rem]" placeholder="简要描述该模型的特点和用途"></textarea>
+                        </div>
+                        <div class="shrink-0">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">文件</label>
+                            <input type="file" id="resource-file" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
+                            <p id="file-hint" class="text-[10px] text-gray-400 mt-1"></p>
+                        </div>
+                        <div class="mt-4 pt-2 flex flex-col-reverse md:flex-row gap-3 md:gap-4 shrink-0">
+                            <button type="button" onclick="closeUploadModal()" class="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">取消</button>
+                            <button id="upload-submit-btn" type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">开始上传</button>
+                        </div>
+                        <div id="upload-status" class="hidden rounded-2xl bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 shrink-0"></div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">文件</label>
-                        <input type="file" id="resource-file" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
-                        <p id="file-hint" class="text-[10px] text-gray-400 mt-1"></p>
-                    </div>
-                    <div class="flex gap-4 mt-8">
-                        <button type="button" onclick="closeUploadModal()" class="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">取消</button>
-                        <button id="upload-submit-btn" type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">开始上传</button>
-                    </div>
-                    <div id="upload-status" class="hidden rounded-2xl bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700"></div>
                 </form>
             </div>
         </div>
@@ -845,11 +837,21 @@
         document.getElementById('upload-type').value = type;
         document.getElementById('modal-title').innerText = type === 'models' ? '上传 3D 模型' : '上传轮播图';
         document.getElementById('name-field').style.display = type === 'models' ? 'block' : 'none';
-        document.getElementById('description-field').style.display = type === 'models' ? 'block' : 'none';
+        document.getElementById('description-field').style.display = type === 'models' ? 'flex' : 'none';
         document.getElementById('order-field').style.display = type === 'carousel' ? 'block' : 'none';
-        document.getElementById('preview-area').style.display = type === 'models' ? 'block' : 'none';
+        document.getElementById('preview-area').style.display = type === 'models' ? 'flex' : 'none';
         document.getElementById('file-hint').innerText = type === 'models' ? '支持 .glb, .gltf, .obj 格式' : '支持 .jpg, .png 格式';
         document.getElementById('resource-file').accept = type === 'models' ? '.glb,.gltf,.obj' : '.jpg,.jpeg,.png';
+        
+        const modalContainer = document.querySelector('#upload-modal > div');
+        if (type === 'models') {
+            modalContainer.classList.remove('max-w-md');
+            modalContainer.classList.add('max-w-4xl');
+        } else {
+            modalContainer.classList.remove('max-w-4xl');
+            modalContainer.classList.add('max-w-md');
+        }
+
         document.getElementById('upload-modal').classList.remove('hidden');
         
         // Clear previous preview

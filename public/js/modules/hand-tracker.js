@@ -1,4 +1,4 @@
-import { UI } from '../ui/controller.js';
+import { UI } from '../ui/controller.js?v=1.1.0';
 
 const CDN_HANDS = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240';
 const CDN_CAMERA = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862';
