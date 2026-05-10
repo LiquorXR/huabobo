@@ -6,7 +6,8 @@ WORKDIR /app
 COPY package*.json ./
 
 ENV NODE_ENV=production
-RUN npm install --omit=dev && \
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm install --omit=dev --no-audit --no-fund && \
     npm cache clean --force
 
 COPY . .
