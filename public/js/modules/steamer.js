@@ -1,4 +1,4 @@
-import { UI } from '../ui/controller.js?v=1.1.0';
+import { UI } from '../ui/controller.js?v=1.2.0';
 
 export const Steamer = {
     app: null,

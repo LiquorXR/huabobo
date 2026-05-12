@@ -1,7 +1,7 @@
-import { UI } from '../ui/controller.js?v=1.1.0';
-import { HandTracker } from '../modules/hand-tracker.js?v=1.1.0';
-import { Steamer } from '../modules/steamer.js?v=1.1.0';
-import { API } from '../api/client.js?v=1.1.0';
+import { UI } from '../ui/controller.js?v=1.2.0';
+import { HandTracker } from '../modules/hand-tracker.js?v=1.2.0';
+import { Steamer } from '../modules/steamer.js?v=1.2.0';
+import { API } from '../api/client.js?v=1.2.0';
 
 export const App = {
     scene: null,

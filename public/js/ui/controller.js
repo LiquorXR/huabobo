@@ -1,4 +1,4 @@
-import { API } from '../api/client.js?v=1.1.0';
+import { API } from '../api/client.js?v=1.2.0';
 
 export const UI = {
     app: null,

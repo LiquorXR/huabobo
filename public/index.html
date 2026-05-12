@@ -8,6 +8,8 @@
     <!-- External Dependencies (Localized) -->
     <link rel="preload" href="lib/three/three.min.js" as="script">
     <link rel="preload" href="lib/draco/draco_decoder.js" as="script">
+    <link rel="preload" href="lib/mediapipe/hands.js" as="script">
+    <link rel="preload" href="lib/mediapipe/camera_utils.js" as="script">
 
     <script defer src="lib/three/three.min.js"></script>
     <script defer src="lib/three/GLTFLoader.js"></script>
@@ -23,9 +25,9 @@
     <script defer src="lib/lucide/lucide.min.js"></script>
 
     <!-- 核心样式与资源本地化 -->
-    <link rel="stylesheet" href="css/main.css?v=1.1.0">
-    <link rel="stylesheet" href="css/auth.css?v=1.1.0">
-    <link rel="stylesheet" href="css/community.css?v=1.1.0">
+    <link rel="stylesheet" href="css/main.css?v=1.2.0">
+    <link rel="stylesheet" href="css/auth.css?v=1.2.0">
+    <link rel="stylesheet" href="css/community.css?v=1.2.0">
     <style>
         #loading-overlay {
             background: url('backgrounds/1.jpg') center/cover no-repeat;
@@ -546,11 +548,11 @@
 
     <!-- Application Modules -->
     <script type="module">
-        import { App } from './js/core/app.js?v=1.1.0';
-        import { UI } from './js/ui/controller.js?v=1.1.0';
-        import { Master } from './js/modules/master.js?v=1.1.0';
-        import { Carousel } from './js/ui/carousel.js?v=1.1.0';
-        import { HandTracker } from './js/modules/hand-tracker.js?v=1.1.0';
+        import { App } from './js/core/app.js?v=1.2.0';
+        import { UI } from './js/ui/controller.js?v=1.2.0';
+        import { Master } from './js/modules/master.js?v=1.2.0';
+        import { Carousel } from './js/ui/carousel.js?v=1.2.0';
+        import { HandTracker } from './js/modules/hand-tracker.js?v=1.2.0';
 
         // Bind modules to window for inline onclick handlers used by the current UI
         window.App = App;
