@@ -75,25 +75,19 @@ export const HandTracker = {
             { file: 'drawing_utils.js', cdn: CDN_DRAWING }
         ];
 
-        // Strategy: Try local first as it's usually faster and more reliable for self-hosted apps
         const loadOne = async ({ file, cdn }) => {
             try {
-                // Try local first
-                await this._loadScript(`${localBase}/${file}`);
-                console.log(`HandTracker: Loaded ${file} from local`);
+                await this._loadScript(`${cdn}/${file}`);
+                console.log(`HandTracker: Loaded ${file} from CDN`);
             } catch (e) {
-                console.warn(`HandTracker: Local failed for ${file}, falling back to CDN`, e.message);
-                try {
-                    await this._loadScript(`${cdn}/${file}`);
-                    console.log(`HandTracker: Loaded ${file} from CDN`);
-                } catch (cdnErr) {
-                    throw new Error(`Failed to load ${file} from both local and CDN`);
-                }
+                console.warn(`HandTracker: CDN failed for ${file}, falling back to local`, e.message);
+                await this._loadScript(`${localBase}/${file}`);
             }
         };
 
         await Promise.all(scriptFiles.map(loadOne));
-        console.log('HandTracker: All MediaPipe scripts loaded');
+
+        console.log('HandTracker: MediaPipe scripts loaded');
     },
 
     async enable() {
@@ -107,6 +101,11 @@ export const HandTracker = {
         this._setStatus('手势模块加载中...');
 
         try {
+            if (!window.Hands || !window.Camera) {
+                this._setStatus('加载手势库...');
+                await this._loadMediaPipeLibs();
+            }
+
             const isMobile = window.innerWidth < 1024;
             const activeVideo = isMobile && this.videoElementMobile ? this.videoElementMobile : this.videoElement;
 
@@ -116,23 +115,14 @@ export const HandTracker = {
                 return;
             }
 
-            // Parallelize script loading and camera startup
-            this._setStatus('正在并联加载资源与摄像头...');
-            
-            const loadPromise = (async () => {
-                if (!window.Hands || !window.Camera) {
-                    await this._loadMediaPipeLibs();
-                }
-            })();
+            this._setStatus('启动摄像头...');
+            await this._startCamera(activeVideo, isMobile);
 
-            const cameraPromise = this._startCamera(activeVideo, isMobile);
-
-            await Promise.all([loadPromise, cameraPromise]);
-
-            this._setStatus('初始化AI模型...');
+            this._setStatus('加载AI模型...');
             await this._initMediaPipe(activeVideo, isMobile);
 
             this._enabled = true;
+
             const hintContainer = document.getElementById('gesture-hint');
             if (hintContainer) {
                 hintContainer.classList.remove('opacity-0', 'translate-y-2');
@@ -237,41 +227,59 @@ export const HandTracker = {
         const origin = window.location.origin;
         const localAssetPath = `${origin}/lib/mediapipe`;
 
-        // Check if we loaded from local or CDN to decide asset path
-        // We can just check if the scripts were loaded from local origin
-        const scripts = document.querySelectorAll('script');
-        let scriptsLoadedFromLocal = false;
-        for (let s of scripts) {
-            if (s.src && s.src.includes('/lib/mediapipe/hands.js')) {
-                scriptsLoadedFromLocal = true;
-                break;
-            }
+        const waitForHands = () => {
+            if (window.Hands) return Promise.resolve();
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const check = () => {
+                    if (window.Hands) resolve();
+                    else if (attempts++ < 60) setTimeout(check, 100);
+                    else reject(new Error('Hands library load timeout'));
+                };
+                check();
+            });
+        };
+
+        await waitForHands();
+
+        let useCDN = false;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const resp = await fetch(`${CDN_HANDS}/hands.binarypb`, {
+                method: 'HEAD',
+                signal: controller.signal,
+                cache: 'no-store'
+            });
+            clearTimeout(timeoutId);
+            useCDN = resp.ok;
+            console.log('HandTracker: CDN probe ok, will load models from CDN');
+        } catch (e) {
+            console.warn('HandTracker: CDN unreachable, falling back to local model files', e.message);
         }
 
-        const resolveAsset = scriptsLoadedFromLocal 
-            ? (file) => `${localAssetPath}/${file.split('/').pop()}`
-            : (file) => `${CDN_HANDS}/${file.split('/').pop()}`;
-
-        console.log(`HandTracker: Using ${scriptsLoadedFromLocal ? 'local' : 'CDN'} assets for model`);
+        const resolveAsset = useCDN
+            ? (file) => `${CDN_HANDS}/${file.split('/').pop()}`
+            : (file) => `${localAssetPath}/${file.split('/').pop()}`;
 
         this.hands = new window.Hands({
             locateFile: (file) => {
                 const path = resolveAsset(file);
+                console.debug(`HandTracker: Loading asset: ${path}`);
                 return path;
             }
         });
 
         this.hands.setOptions({
             maxNumHands: 2,
-            modelComplexity: isMobile ? 0 : 1, // Use Lite model on mobile for better performance
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.7,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.75,
+            minTrackingConfidence: 0.75,
             selfieMode: false
         });
 
         this.hands.onResults((results) => this.onResults(results));
 
-        // Warm up the model by sending an empty frame if possible or just wait for the first real frame
         this._setStatus('手势系统已就绪');
     },
 
