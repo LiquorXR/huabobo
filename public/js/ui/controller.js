@@ -1308,7 +1308,7 @@ export const UI = {
                         ${model.thumbnail ? `<img src="${model.thumbnail}" class="w-full h-full object-contain p-2">` : '<div class="w-8 h-8 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin"></div>'}
                     </div>
                     <span class="text-xs font-black text-slate-700 uppercase tracking-widest">${model.name}</span>
-                    ${model.description ? `<span class="text-[10px] text-slate-400 text-center leading-tight line-clamp-2">${model.description}</span>` : ''}
+                    ${model.description ? `<span class="text-[10px] text-slate-400 text-center leading-tight line-clamp-2 group-hover:line-clamp-none group-hover:text-slate-600 transition-all duration-300" title="${model.description.replace(/"/g, '&quot;')}">${model.description}</span>` : ''}
                 </div>
             `).join('');
 
