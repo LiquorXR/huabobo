@@ -1,8 +1,9 @@
 import { UI } from '../ui/controller.js?v=1.1.0';
 
-const CDN_HANDS = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240';
-const CDN_CAMERA = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862';
-const CDN_DRAWING = 'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124';
+const CDN_BASE = 'https://fastly.jsdelivr.net/npm'; // 使用 fastly 节点优化中国大陆访问
+const CDN_HANDS = `${CDN_BASE}/@mediapipe/hands@0.4.1675469240`;
+const CDN_CAMERA = `${CDN_BASE}/@mediapipe/camera_utils@0.3.1675466862`;
+const CDN_DRAWING = `${CDN_BASE}/@mediapipe/drawing_utils@0.3.1675466124`;
 
 export const HandTracker = {
     app: null,
@@ -66,28 +67,22 @@ export const HandTracker = {
     },
 
     async _loadMediaPipeLibs() {
-        const origin = window.location.origin;
-        const localBase = `${origin}/lib/mediapipe`;
-
+        this._setStatus('正在从 CDN 加载库...');
+        
+        // 彻底依赖 CDN，使用中国大陆优化的 fastly 节点
         const scriptFiles = [
-            { file: 'hands.js', cdn: CDN_HANDS },
-            { file: 'camera_utils.js', cdn: CDN_CAMERA },
-            { file: 'drawing_utils.js', cdn: CDN_DRAWING }
+            `${CDN_HANDS}/hands.js`,
+            `${CDN_CAMERA}/camera_utils.js`,
+            `${CDN_DRAWING}/drawing_utils.js`
         ];
 
-        const loadOne = async ({ file, cdn }) => {
-            try {
-                await this._loadScript(`${cdn}/${file}`);
-                console.log(`HandTracker: Loaded ${file} from CDN`);
-            } catch (e) {
-                console.warn(`HandTracker: CDN failed for ${file}, falling back to local`, e.message);
-                await this._loadScript(`${localBase}/${file}`);
-            }
-        };
-
-        await Promise.all(scriptFiles.map(loadOne));
-
-        console.log('HandTracker: MediaPipe scripts loaded');
+        try {
+            await Promise.all(scriptFiles.map(src => this._loadScript(src)));
+            console.log('HandTracker: MediaPipe scripts loaded from CDN');
+        } catch (e) {
+            console.error('HandTracker: CDN loading failed', e);
+            throw new Error('CDN 加载失败，请检查网络连接');
+        }
     },
 
     async enable() {
@@ -101,6 +96,7 @@ export const HandTracker = {
         this._setStatus('手势模块加载中...');
 
         try {
+            // 1. 并行加载库文件 (如果尚未加载)
             if (!window.Hands || !window.Camera) {
                 this._setStatus('加载手势库...');
                 await this._loadMediaPipeLibs();
@@ -115,11 +111,12 @@ export const HandTracker = {
                 return;
             }
 
-            this._setStatus('启动摄像头...');
-            await this._startCamera(activeVideo, isMobile);
-
-            this._setStatus('加载AI模型...');
-            await this._initMediaPipe(activeVideo, isMobile);
+            // 2. 并行启动摄像头和初始化模型
+            this._setStatus('正在启动...');
+            await Promise.all([
+                this._startCamera(activeVideo, isMobile),
+                this._initMediaPipe(activeVideo, isMobile)
+            ]);
 
             this._enabled = true;
 
@@ -173,8 +170,9 @@ export const HandTracker = {
             this.videoElementMobile.srcObject = null;
         }
         if (this.hands) {
-            try { this.hands.close?.(); } catch (e) {}
-            this.hands = null;
+            // 保持 hands 实例，不彻底销毁，只停止，下次开启更快
+            // try { this.hands.close?.(); } catch (e) {}
+            // this.hands = null;
         }
     },
 
@@ -198,7 +196,7 @@ export const HandTracker = {
             });
             await camera.start();
             this._camera = camera;
-            console.log('HandTracker: Camera started via MediaPipe helper');
+            console.log('HandTracker: Camera started');
         } else {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { width, height, facingMode: 'user' }
@@ -206,8 +204,6 @@ export const HandTracker = {
             videoEl.srcObject = stream;
             await videoEl.play();
             this._cameraStream = stream;
-            console.log('HandTracker: Camera started via native getUserMedia');
-
             this._startNativeFrameLoop(videoEl);
         }
     },
@@ -224,8 +220,7 @@ export const HandTracker = {
     },
 
     async _initMediaPipe(activeVideo, isMobile) {
-        const origin = window.location.origin;
-        const localAssetPath = `${origin}/lib/mediapipe`;
+        if (this.hands) return Promise.resolve(); // 如果已初始化，直接返回
 
         const waitForHands = () => {
             if (window.Hands) return Promise.resolve();
@@ -242,30 +237,11 @@ export const HandTracker = {
 
         await waitForHands();
 
-        let useCDN = false;
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
-            const resp = await fetch(`${CDN_HANDS}/hands.binarypb`, {
-                method: 'HEAD',
-                signal: controller.signal,
-                cache: 'no-store'
-            });
-            clearTimeout(timeoutId);
-            useCDN = resp.ok;
-            console.log('HandTracker: CDN probe ok, will load models from CDN');
-        } catch (e) {
-            console.warn('HandTracker: CDN unreachable, falling back to local model files', e.message);
-        }
-
-        const resolveAsset = useCDN
-            ? (file) => `${CDN_HANDS}/${file.split('/').pop()}`
-            : (file) => `${localAssetPath}/${file.split('/').pop()}`;
-
+        // 彻底使用 CDN 加载模型资源
         this.hands = new window.Hands({
             locateFile: (file) => {
-                const path = resolveAsset(file);
-                console.debug(`HandTracker: Loading asset: ${path}`);
+                const path = `${CDN_HANDS}/${file.split('/').pop()}`;
+                console.log('HandTracker: Loading model from CDN:', path);
                 return path;
             }
         });
@@ -273,12 +249,19 @@ export const HandTracker = {
         this.hands.setOptions({
             maxNumHands: 2,
             modelComplexity: 1,
-            minDetectionConfidence: 0.75,
-            minTrackingConfidence: 0.75,
+            minDetectionConfidence: 0.6, // 略微调低初始检测阈值，提高响应
+            minTrackingConfidence: 0.5,
             selfieMode: false
         });
 
         this.hands.onResults((results) => this.onResults(results));
+        
+        // 预热模型：发送一个空帧
+        try {
+            const dummyCanvas = document.createElement('canvas');
+            dummyCanvas.width = 1; dummyCanvas.height = 1;
+            await this.hands.send({ image: dummyCanvas });
+        } catch(e) {}
 
         this._setStatus('手势系统已就绪');
     },

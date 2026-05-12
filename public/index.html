@@ -6,21 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>数字非遗 - DIY花饽饽交互系统</title>
     <!-- External Dependencies (Localized) -->
-    <link rel="preload" href="lib/three/three.min.js" as="script">
-    <link rel="preload" href="lib/draco/draco_decoder.js" as="script">
+    <link rel="preload" href="https://cdn.staticfile.net/three.js/r128/three.min.js" as="script">
+    <!-- Preload MediaPipe for faster gesture activation via China-optimized CDN -->
+    <link rel="preload" href="https://fastly.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" as="script">
+    <link rel="preload" href="https://fastly.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" as="script">
 
-    <script defer src="lib/three/three.min.js"></script>
-    <script defer src="lib/three/GLTFLoader.js"></script>
-    <script defer src="lib/three/DRACOLoader.js"></script>
-    <script defer src="lib/three/OBJLoader.js"></script>
-    <script defer src="lib/three/OrbitControls.js"></script>
-    <script defer src="lib/three/OBJExporter.js"></script>
-    <script defer src="lib/three/STLExporter.js"></script>
-    <script defer src="lib/three/GLTFExporter.js"></script>
+    <script defer src="https://cdn.staticfile.net/three.js/r128/three.min.js"></script>
+    <script defer src="https://cdn.staticfile.net/three.js/r128/examples/js/loaders/GLTFLoader.min.js"></script>
+    <script defer src="https://cdn.staticfile.net/three.js/r128/examples/js/loaders/DRACOLoader.min.js"></script>
+    <script defer src="https://cdn.staticfile.net/three.js/r128/examples/js/loaders/OBJLoader.min.js"></script>
+    <script defer src="https://cdn.staticfile.net/three.js/r128/examples/js/controls/OrbitControls.min.js"></script>
+    <script defer src="https://cdn.staticfile.net/three.js/r128/examples/js/exporters/OBJExporter.min.js"></script>
+    <script defer src="https://cdn.staticfile.net/three.js/r128/examples/js/exporters/STLExporter.min.js"></script>
+    <script defer src="https://cdn.staticfile.net/three.js/r128/examples/js/exporters/GLTFExporter.min.js"></script>
     <!-- MediaPipe scripts loaded dynamically via HandTracker.enable() -->
     <!-- UI Framework & Icons -->
-    <script src="lib/tailwind.min.js"></script>
-    <script defer src="lib/lucide/lucide.min.js"></script>
+    <script src="https://cdn.staticfile.net/tailwindcss/2.2.19/tailwind.min.js"></script>
+    <script defer src="https://cdn.staticfile.net/lucide/0.316.0/lucide.min.js"></script>
 
     <!-- 核心样式与资源本地化 -->
     <link rel="stylesheet" href="css/main.css?v=1.1.0">
